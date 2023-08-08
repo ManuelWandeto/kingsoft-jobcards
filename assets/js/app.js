@@ -1,3 +1,4 @@
+const timestampFormatString = "YYYY-MM-DDTHH:mm"
 function formdata() {
     Iodine.rule('laterOrEqual', (endDate, startDate) => {
         return new Date(endDate) >= new Date(startDate);
@@ -35,7 +36,7 @@ function formdata() {
                 rules: []
             },
             startDate: {
-                value: moment(Date.now()).format('YYYY-MM-DD'), error: null,
+                value: moment().format(timestampFormatString), error: null,
                 rules: ["required"]
             },
             endDate: {
@@ -56,6 +57,7 @@ function formdata() {
             },
         },
         editJob({project, client_id, location, description, priority, status, assigned_to, supervised_by, start_date, end_date, completion_notes, issues_arrising}) {
+            clearFormErrors(this.fields)
             this.fields.location.value = location
             this.fields.client.value = client_id
             this.fields.project.value = project
@@ -64,8 +66,8 @@ function formdata() {
             this.fields.status.value = status
             this.fields.assignee.value = assigned_to || undefined
             this.fields.supervisor.value = supervised_by || undefined
-            this.fields.startDate.value = moment(start_date).format('YYYY-MM-DD')
-            this.fields.endDate.value = moment(end_date).format('YYYY-MM-DD')
+            this.fields.startDate.value = moment(start_date).format(timestampFormatString)
+            this.fields.endDate.value = moment(end_date).format(timestampFormatString)
             this.fields.completion_notes.value = completion_notes?.trim()
             this.fields.issues_arrising.value = issues_arrising?.trim()
             this.isFormValid()
@@ -98,10 +100,11 @@ function formdata() {
             this.fields.status.value = undefined
             this.fields.assignee.value = undefined
             this.fields.supervisor.value = undefined
-            this.fields.startDate.value = moment(Date.now()).format('YYYY-MM-DD')
+            this.fields.startDate.value = moment().format(timestampFormatString)
             this.fields.endDate.value = undefined
             this.fields.completion_notes.value = ""
             this.fields.issues_arrising.value = ""
+            clearFormErrors(this.fields)
             this.isFormValid()
         },
         submit(e) {
@@ -123,8 +126,8 @@ function formdata() {
                     status: this.fields.status.value,
                     assigned_to: this.fields.assignee.value ?? null,
                     supervised_by: this.fields.supervisor.value ?? null,
-                    start_date: moment(new Date(this.fields.startDate.value)).format('YYYY-MM-DD HH:mm:ss'),
-                    end_date: moment(new Date(this.fields.endDate.value)).format('YYYY-MM-DD HH:mm:ss'),
+                    start_date: moment(new Date(this.fields.startDate.value)).format(timestampFormatString),
+                    end_date: moment(new Date(this.fields.endDate.value)).format(timestampFormatString),
                     completion_notes: this.fields.completion_notes.value?.trim() ?? '',
                     issues_arrising: this.fields.issues_arrising.value?.trim() ?? '',
                 }),
@@ -159,8 +162,8 @@ function formdata() {
             status: this.fields.status.value,
             assigned_to: this.fields.assignee.value,
             supervised_by: this.fields.supervisor.value,
-            start_date: moment(new Date(this.fields.startDate.value)).format('YYYY-MM-DD HH:mm:ss'),
-            end_date: moment(new Date(this.fields.endDate.value)).format('YYYY-MM-DD HH:mm:ss'),
+            start_date: moment(new Date(this.fields.startDate.value)).format(timestampFormatString),
+            end_date: moment(new Date(this.fields.endDate.value)).format(timestampFormatString),
             completion_notes: this.fields.completion_notes.value?.trim() ?? '',
             issues_arrising: this.fields.issues_arrising.value?.trim() ?? '',
         }) {
@@ -239,6 +242,10 @@ function formdata() {
     }
 };
 
+function clearFormErrors(fields) {
+    Object.values(fields).forEach(field => field.error = null)
+}
+
 function showAlert(className, heading, message, duration=2500) {
     let slot = document.getElementById('alert-slot')
     slot.innerHTML = `
@@ -281,6 +288,7 @@ function clientFormData() {
             }
         },
         editClient({name, email, phone, location}) {
+            clearFormErrors(this.fields)
             this.fields.name.value = name
             this.fields.email.value = email
             this.fields.location.value = location
@@ -304,6 +312,7 @@ function clientFormData() {
             this.fields.email.value = ""
             this.fields.location.value = ""
             this.fields.phone.value = ""
+            clearFormErrors(this.fields)
             this.isFormValid()
         },
         submit(e) {
@@ -500,6 +509,7 @@ function addUserForm() {
             this.fields.role.value = undefined
             this.fields.password.value = ""
             this.fields.repeatPassword.value = ""
+            clearFormErrors(this.fields)
             this.isFormValid()
         },
         isFormInvalid: true,
@@ -554,6 +564,7 @@ function addUserForm() {
                     Alpine.store('users').isLoaded = true
                     showAlert('alert-danger', 'Error occured', `Error adding user: ${e}`, 3500)
                 })
+            this.clearForm()
         }
     }
 }
