@@ -1,0 +1,57 @@
+canvas{
+
+    width:450px !important;
+    height:450px !important;
+
+}
+
+#tooplate_main {
+    width: 968px;
+    margin: 0 auto;
+     padding: 10px 0 20px;
+}
+
+#tooplate_content {
+    width: 938px;
+    height: 800px;
+    border: 5px dotted blu;
+    /*background: url(../images/tooplate_content.png) no-repeat;*/
+    background: none;
+
+}
+
+#tooplate_content li .inner {
+    width: 600px;
+    height: 800px !important;
+    /*padding: 40px 40px 40px 100px;*/
+    overflow: auto;
+    border: 5px dotted gree;
+}
+
+#tooplate_content li {
+    float: left;
+    position: relative;
+    width: 188px;
+    height: 649px;
+}
+
+#site_title {
+    width: 100%;
+    height: 144px;
+    /*border: 1px solid green !important;*/
+    /*margin: 0 auto 20px;*/
+}
+
+#site_title h1 a {
+    /*display: block;
+    font-size: 12px;
+    font-family: Georgia, "Times New Roman", Times, serif;
+    width: 300px;
+    height: 300px;
+    color: #acacac;
+    text-indent: -10000px;
+    background: url(../images/eabl_dash_logo.jpeg) no-repeat center left;*/
+    background: none;
+
+}
+

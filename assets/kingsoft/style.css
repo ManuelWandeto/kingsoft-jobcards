@@ -1,0 +1,13 @@
+
+.left 
+{
+float:left;
+width:48%;
+margin-left:1%;
+}
+.right
+{
+float:right;
+width:48%;
+margin-right:1%;
+}

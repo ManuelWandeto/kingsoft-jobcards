@@ -1,0 +1,40 @@
+/* Priority codes */
+table.alltime-jobs tbody tr td.urgent {
+    background-color: #F59700;
+}
+table.alltime-jobs tbody tr td.medium {
+    background-color: #FFB947;
+}
+table.alltime-jobs tbody tr td.low {
+    background-color: #FFD085;
+}
+
+/* Status codes */
+table.alltime-jobs tbody tr td.completed {
+    background-color: #007bff;
+}
+table.alltime-jobs tbody tr td.ongoing {
+    background-color: #18ce0f;
+}
+table.alltime-jobs tbody tr td.scheduled {
+    background-color: #E56399;
+}
+table.alltime-jobs tbody tr td.reported {
+    background-color: #A9606C;
+}
+table.alltime-jobs tbody tr td.overdue {
+    background-color: #dc3545;
+}
+table.alltime-jobs tbody tr td.cancelled {
+    background-color: #81667A;
+    
+}
+table.alltime-jobs tbody tr td.suspended {
+    background-color: #FFB236;
+}
+
+/* Error codes */
+span.text-error {
+    font-size: .9rem;
+    color: #FFD085 !important;
+}
