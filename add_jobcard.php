@@ -97,7 +97,7 @@
             <span class="text-danger" x-text="fields.description.error" x-cloak></span>
           </div>
           <div class="row p-3">
-            <div class="form-group col-sm-6 col-md-3 p-0 pr-sm-2 pr-md-0">
+            <div class="form-group col-sm-6 col-xl-3 p-0 pr-sm-2 pr-md-0">
               <label for="location" >Location</label>
               <input 
                 type="text" 
@@ -109,7 +109,7 @@
                 placeholder="Enter site location">
               <span class="text-danger" x-text="fields.location.error" x-cloak></span>
             </div>
-            <div class="form-group col-sm-6 col-md-3 p-0 px-md-2">
+            <div class="form-group col-sm-6 col-xl-3 p-0 px-md-2">
               <label for="status">Status</label>
               <select 
                 class="custom-select" id="status" 
@@ -132,24 +132,26 @@
                 <option value="SUSPENDED">Suspended</option>
               </select>
             </div>
-            <div class="form-group col-sm col-md-6 p-0">
+            <div class="form-group col-sm p-0">
               <label for="duration">
                 <span x-show="!fields.startDate.value && !fields.endDate.value">Duration: </span> 
                 <span x-show="fields.startDate.value || fields.endDate.value">
-                  From: <span x-text="fields.startDate.value"></span>
-                  To: <span x-text="fields.endDate.value"></span>
+                  From: 
+                  <span x-text="moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
+                  <strong>To:</strong> 
+                  <span x-text="fields.endDate.value && moment(fields.endDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
                 </span>
               </label>
               <div class="custom-datepicker" id="duration">
                 <input 
-                  type="date" 
+                  type="datetime-local" 
                   x-model="fields.startDate.value" 
                   x-on:blur="validateField(fields.startDate)" 
                   :class="fields.startDate.error ? 'border-danger' : ''"
                   :disabled="editMode"
                   id="startDate" required>
                 <input 
-                  type="date"
+                  type="datetime-local"
                   :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
                   x-model="fields.endDate.value" 
                   x-on:blur="validateField(fields.endDate)" 
