@@ -166,7 +166,7 @@
                         <th style="min-width: 100px;">
                             Site
                         </th>
-                        <th style="min-width: 200px;">
+                        <th style="min-width: 250px;">
                             Duration
                         </th>
                         <th style="min-width: 200px;">
@@ -183,7 +183,12 @@
                     <tbody>
                         <template x-for="job in $store.jobs.getJobs()">
                             <tr>
-                                <td x-text="moment(job.created_at).format('YYYY-MM-DD')"></td>
+                                <td>
+                                    <div class="datetime">
+                                        <span class="date" x-text="moment(job.created_at).format('YYYY-MM-DD')"></span>
+                                        <span class="time" x-text="moment(job.created_at).format('h:mm A')"></span>  
+                                    </div>
+                                </td>
                                 <td x-text="job.project"></td>
                                 <td x-text="$store.clients.getClient(job.client_id)?.name || 'not found'"></td>
                                 <td x-text="job.description"></td>
@@ -192,9 +197,17 @@
                                 <td x-text="$store.users.getUser(job.supervised_by)?.username || 'Null'"></td>
                                 <td x-text="job.location"></td>
                                 <td>
-                                    <span x-text="moment(job.start_date).format('YYYY-MM-DD')"></span>
-                                    -
-                                    <span x-text="moment(job.end_date).format('YYYY-MM-DD')"></span>
+                                    <div class="duration">
+                                        <div class="datetime">
+                                            <span class="date" x-text="moment(job.start_date).format('YYYY-MM-DD')"></span>
+                                            <span class="time" x-text="moment(job.start_date).format('h:mm A')"></span>
+                                        </div>
+                                        -
+                                        <div class="datetime">
+                                            <span class="date" x-text="moment(job.end_date).format('YYYY-MM-DD')"></span>
+                                            <span class="time" x-text="moment(job.end_date).format('h:mm A')"></span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td x-text="job.status" :class="job.status.toLowerCase()"></td>
                                 <td>
