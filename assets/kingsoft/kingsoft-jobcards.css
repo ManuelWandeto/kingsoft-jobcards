@@ -62,6 +62,7 @@ form .form-group div.custom-datepicker {
 }
 
 form .form-group div.custom-datepicker > input {
+    box-sizing: border-box;
     display: block;
     flex: 1;
     appearance: none;
@@ -92,6 +93,32 @@ div.card table.alltime-jobs tbody tr td {
 }
 div.card table.alltime-jobs tbody {
     border-bottom: 1px solid #E3E3E3;
+}
+
+div.datetime {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: black;
+}
+
+div.datetime span.date {
+    font-family: 'Montserrat';
+    font-weight: 500;
+    font-size: .9rem;
+}
+
+div.datetime span.time {
+    font-family: 'verdana';
+    font-size: .8rem;
+    opacity: 0.8;
+}
+
+table.alltime-jobs td div.duration {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
 }
 
 html {
@@ -313,4 +340,10 @@ div.page-options button.btn {
 
 div.page-options button.btn.show {
     background-color: #5E6973;
+}
+
+@media(min-width: 1200px) and (max-width: 1400px) {
+    form .form-group div.custom-datepicker > input {
+        font-size: .85rem;
+    }
 }
