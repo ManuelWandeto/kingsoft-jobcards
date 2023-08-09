@@ -12,7 +12,7 @@ function formdata() {
                 rules: ["required", "maxLength:80", "minLength:3"]
             },
             client: {
-                value: undefined, error: null,
+                value: undefined, input: '', error: null,
                 rules: ["required"]
             },
             description: {
@@ -60,6 +60,7 @@ function formdata() {
             clearFormErrors(this.fields)
             this.fields.location.value = location
             this.fields.client.value = client_id
+            this.fields.client.input = Alpine.store("clients").getClient(client_id).name
             this.fields.project.value = project
             this.fields.description.value = description
             this.fields.priority.value = priority
@@ -94,6 +95,7 @@ function formdata() {
         clearForm() {
             this.fields.location.value = ""
             this.fields.client.value = ""
+            this.fields.client.input = ""
             this.fields.project.value = ""
             this.fields.description.value = ""
             this.fields.priority.value = undefined
