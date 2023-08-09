@@ -42,6 +42,7 @@
   <link href="./assets/kingsoft/style.css" rel="stylesheet" />
   <link href="./assets/kingsoft/kingsoft-jobcards.css" rel="stylesheet" />
   <link href="./assets/kingsoft/sidebar.css" rel="stylesheet" />
+  <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js" type="text/javascript"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/@caneara/iodine@8.3.0/dist/iodine.min.umd.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="./assets/js/app.js" type="text/javascript"></script>
