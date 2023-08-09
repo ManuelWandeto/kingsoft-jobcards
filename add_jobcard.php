@@ -38,24 +38,57 @@
               <span class="text-danger" x-text="fields.project.error" x-cloak></span>
             </div>
             <div class="form-group pr-xl-2">
-              <label for="client-name">Client name</label>
-              <select 
-                class="custom-select" 
-                id="client-name" 
-                :disabled="editMode" 
-                required 
-                x-model="fields.client.value"
-                @change="$event => {
-                  let client = $store.clients.getClient($event.target.value)
-                  fields.location.value = client.location
-                }"
-              >
-                <option selected disabled value="">Select client</option>
-                <template x-for="client in $store.clients.list">
-                  <option :value="client.id" x-text="client.name"></option>
-                </template>
-              </select>
-              <span class="text-danger" x-text="fields.client.error" x-cloak></span>
+              <label for="select-client">Client name</label>
+              <div class="clients dropdown" x-data="{isExpanded: false}">
+                <input 
+                  class="form-control dropdown-toggle" 
+                  id="select-client" 
+                  autocomplete="off"
+                  data-toggle="dropdown"
+                  :disabled="editMode" 
+                  data-toggle="dropdown" 
+                  data-offset="0,-10"
+                  aria-haspopup="true"
+                  :aria-expanded= "isExpanded"
+                  placeholder="Select client"
+                  @focus="()=> {
+                    $('.dropdown-toggle').dropdown()
+                    isExpanded = true
+                  }"
+                  @blur="($event)=> {
+                    isExpanded = false
+                    let client = $store.clients.list.find(c => c.name.toLowerCase() === $event.target.value.trim().toLowerCase())
+                    if (!client) {
+                      fields.client.value = undefined
+                      fields.location.value = null
+                    } else {
+                      fields.client.value = client.id
+                      fields.location.value = client.location
+                    }
+                    
+                    validateField(fields.client)
+                  }" 
+                  x-model="fields.client.input"
+                  required
+                  >
+                </input>
+                <i class="now-ui-icons arrows-1_minimal-down" :class="isExpanded && 'isOpen'"></i>
+                <div class="dropdown-menu p-3" aria-labelledby="dropdownMenuButton">
+                  <div class="clients-list">
+                    <template x-for="client in $store.clients.list.filter(c => c.name.toLowerCase().includes(fields.client.input.toLowerCase()))">
+                      <button type="button" x-text="client.name" class="px-2 py-3"
+                        @click="() => {
+                          fields.client.input = client.name;
+                          fields.client.value = client.id
+                          fields.location.value = client.location
+                          validateField(fields.client)
+                        }">
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+              <span style="position: absolute;" class="text-danger" x-text="fields.client.error" x-cloak></span>
             </div>
             <div class="form-group pr-sm-2">
               <label for="assignee">Assigned to</label>
