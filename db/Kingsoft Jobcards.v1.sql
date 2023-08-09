@@ -63,6 +63,7 @@ BEGIN
   SET NEW.status = CASE
 		WHEN NEW.status IN ('REPORTED', 'ONGOING', 'SCHEDULED') AND NEW.end_date < NOW() THEN 'OVERDUE'
 		WHEN NEW.status = 'REPORTED' AND COALESCE(NEW.assigned_to, NEW.supervised_by) IS NOT NULL THEN 'SCHEDULED'
+		WHEN NEW.status = 'SCHEDULED' AND NEW.start_date <= NOW() THEN 'ONGOING'
 		WHEN NEW.status = 'OVERDUE' AND NEW.end_date > NOW() THEN 'ONGOING'
 		ELSE NEW.status
 	END;
@@ -79,6 +80,7 @@ BEGIN
   SET NEW.status = CASE
 		WHEN NEW.status IN ('REPORTED', 'ONGOING', 'SCHEDULED') AND NEW.end_date < NOW() THEN 'OVERDUE'
 		WHEN NEW.status = 'REPORTED' AND COALESCE(NEW.assigned_to, NEW.supervised_by) IS NOT NULL THEN 'SCHEDULED'
+		WHEN NEW.status = 'SCHEDULED' AND NEW.start_date <= NOW() THEN 'ONGOING'
 		WHEN NEW.status = 'OVERDUE' AND NEW.end_date > NOW() THEN 'ONGOING'
 		ELSE NEW.status
 	END;
@@ -93,6 +95,7 @@ BEGIN
 	SET status = CASE
 		WHEN status IN ('REPORTED', 'ONGOING', 'SCHEDULED') AND end_date < NOW() THEN 'OVERDUE'
 		WHEN status = 'REPORTED' AND COALESCE(assigned_to, supervised_by) IS NOT NULL THEN 'SCHEDULED'
+		WHEN status = 'SCHEDULED' AND start_date <= NOW() THEN 'ONGOING'
 		WHEN status = 'OVERDUE' AND end_date > NOW() THEN 'ONGOING'
 		ELSE status
 	END
