@@ -724,10 +724,14 @@ document.addEventListener('alpine:init', () => {
                     })
                 }
                 else if (filters.search.by === 'assignee' || filters.search.by === 'supervisor') {
-                    results = results.filter(j => {
-                        let user = Alpine.store('users').getUser(filters.search.by === 'assignee' ? j.assigned_to : j.supervised_by)
-                        return user?.username.toLowerCase().includes(filters.search.value.toLowerCase()) ?? false
-                    })
+                    if (filters.search.value?.trim().toLowerCase() === 'null') {
+                        results = results.filter(j => filters.search.by === 'assignee' ? !j.assigned_to : !j.supervised_by)
+                    } else {
+                        results = results.filter(j => {
+                            let user = Alpine.store('users').getUser(filters.search.by === 'assignee' ? j.assigned_to : j.supervised_by)
+                            return user?.username.toLowerCase().includes(filters.search.value.toLowerCase()) ?? false
+                        })
+                    }
                 }
                 else {
                     results = results.filter(j => j[filters.search.by].toLowerCase().includes(filters.search.value.toLowerCase()))
