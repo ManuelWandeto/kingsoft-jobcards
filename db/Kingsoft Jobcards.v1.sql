@@ -104,3 +104,12 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+CREATE TABLE `jc_attachments` (
+	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+	`jobcard_id` MEDIUMINT NOT NULL,
+	`file_path` VARCHAR(255) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL
+);
+
+ALTER TABLE `jc_attachments` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
