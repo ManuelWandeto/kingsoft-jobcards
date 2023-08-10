@@ -16,7 +16,8 @@
 
       </div>
       <div class="card-body">
-        <form method="POST" x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
+        <form method="POST" enctype="multipart/form-data" 
+          x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
           submitEdit(job.id)
           document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
           editMode = false
@@ -28,6 +29,7 @@
             <div class="form-group pr-sm-2">
               <label for="project">Project</label>
               <input 
+                name="project"
                 type="text" 
                 :disabled="editMode"
                 x-model="fields.project.value" 
@@ -41,6 +43,7 @@
               <label for="select-client">Client name</label>
               <div class="clients dropdown" x-data="{isExpanded: false}">
                 <input 
+                  name="client_id"
                   class="form-control dropdown-toggle" 
                   id="select-client" 
                   autocomplete="off"
@@ -93,7 +96,7 @@
             <div class="form-group pr-sm-2">
               <label for="assignee">Assigned to</label>
               <!-- Can set assigned_to and supervisor fields to be disabled if: "editMode && fields.assignee.value.trim()" -->
-              <select class="custom-select" id="assignee" 
+              <select name="assignee" class="custom-select" id="assignee" 
                 x-model="fields.assignee.value" 
                 :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
               >
@@ -105,7 +108,7 @@
             </div>
             <div class="form-group">
               <label for="supervisor">Supervised by</label>
-              <select class="custom-select" id="supervisor" 
+              <select name="supervisor" class="custom-select" id="supervisor" 
                 x-model="fields.supervisor.value"
                 :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
               >
@@ -133,6 +136,7 @@
             <div class="form-group col-sm-6 col-xl-3 p-0 pr-sm-2 pr-md-0">
               <label for="location" >Location</label>
               <input 
+                name="location"
                 type="text" 
                 :disabled="editMode"
                 x-model="fields.location.value" 
@@ -145,7 +149,8 @@
             <div class="form-group col-sm-6 col-xl-3 p-0 px-md-2">
               <label for="status">Status</label>
               <select 
-                class="custom-select" id="status" 
+                class="custom-select" id="status"
+                name="status"
                 required x-model="fields.status.value" 
                 :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
               >
@@ -178,6 +183,7 @@
               <div class="custom-datepicker" id="duration">
                 <input 
                   type="datetime-local" 
+                  name="start_date"
                   x-model="fields.startDate.value" 
                   x-on:blur="validateField(fields.startDate)" 
                   :class="fields.startDate.error ? 'border-danger' : ''"
@@ -185,6 +191,7 @@
                   id="startDate" required>
                 <input 
                   type="datetime-local"
+                  name="end_date"
                   :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
                   x-model="fields.endDate.value" 
                   x-on:blur="validateField(fields.endDate)" 
@@ -198,12 +205,37 @@
           <div class="row px-3 row-cols-1 row-cols-md-2">
             <div class="form-group pr-md-3">
               <label for="on-completion-notes">Completion notes</label>
-              <textarea name="on-completion-notes" class="form-control" id="on-completion-notes" rows="30" x-model="fields.completion_notes.value"></textarea>
+              <textarea name="completion_notes" class="form-control" id="on-completion-notes" rows="30" x-model="fields.completion_notes.value"></textarea>
             </div>
             <div class="form-group">
               <label for="issues-arising">Issues arrising</label>
-              <textarea name="issues-arising" class="form-control" id="issues-arising" rows="30" x-model="fields.issues_arrising.value"></textarea>
+              <textarea name="issues_arrising" class="form-control" id="issues-arising" rows="30" x-model="fields.issues_arrising.value"></textarea>
             </div>
+          </div>
+          <div class="form-group mt-2">
+              <label for="files">Attach related files</label>
+              <input type="file" id="files" name ="attachments[]" class="form-control" 
+                multiple accept=".doc,.docx,.pdf,.csv,.xlsx,image/*"
+                @change="()=>{
+                  fields.files = Array.from($event.target.files)
+                }"
+              >
+              <div class="selected-files mt-3 px-2" x-show="fields.files.length" x-cloak x-transition>
+                <template x-for="file in fields.files">
+                  <div class="file-info">
+                    <i class="now-ui-icons" :class="file.type.includes('image') ? 'design_image' : 'files_paper'"></i>
+                    <span class="name" x-text="shortenFileName(file.name)"></span>
+                    <span class="size" x-text="returnFileSize(file.size)"></span>
+                    <button type="button" class="icon-button" @click="()=>{
+                      const i = fields.files.findIndex(f => f.name === file.name)
+                      removeFileFromFileList(i, 'files')
+                      fields.files.splice(i, 1)
+                    }">
+                      <i style="color: #dc3545;" class="now-ui-icons ui-1_simple-remove"></i>
+                    </button>
+                  </div>
+                </template>
+              </div>
           </div>
           <div class="form-group action-group">
             <template x-if="editMode">
@@ -218,7 +250,7 @@
               <i style="color: #dc3545; font-size: 1.2rem;" class="now-ui-icons ui-1_simple-remove"></i>
              </button>
             </template>
-            <select class="custom-select" id="priority" required x-model="fields.priority.value"
+            <select class="custom-select" name="priority" id="priority" required x-model="fields.priority.value"
               :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
             >
               <option selected disabled value="">Set priority</option>
