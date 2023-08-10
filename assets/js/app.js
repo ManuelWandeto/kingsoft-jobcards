@@ -55,6 +55,7 @@ function formdata() {
                 value: null, error: null,
                 rules: ["minLength:10"]
             },
+            files: []
         },
         editJob({project, client_id, location, description, priority, status, assigned_to, supervised_by, start_date, end_date, completion_notes, issues_arrising}) {
             clearFormErrors(this.fields)
@@ -107,6 +108,11 @@ function formdata() {
             this.fields.completion_notes.value = ""
             this.fields.issues_arrising.value = ""
             clearFormErrors(this.fields)
+            // TODO: clear selected files if any
+            for (let i = 0; i < this.fields.files.length; i++) {
+                removeFileFromFileList(i, 'files')
+                this.fields.files.splice(i, 1)
+            }
             this.isFormValid()
         },
         submit(e) {
@@ -115,44 +121,32 @@ function formdata() {
                 return
             }
             Alpine.store('jobs').isLoaded = false
-            fetch("includes/add_job.inc.php", {
-                method: "POST",
-                mode: "same-origin",
-                credentials: "same-origin",
-                body: JSON.stringify({
-                    project: this.fields.project.value,
-                    client_id: this.fields.client.value,
-                    location: this.fields.location.value,
-                    description: this.fields.description.value,
-                    priority: this.fields.priority.value,
-                    status: this.fields.status.value,
-                    assigned_to: this.fields.assignee.value ?? null,
-                    supervised_by: this.fields.supervisor.value ?? null,
-                    start_date: moment(new Date(this.fields.startDate.value)).format(timestampFormatString),
-                    end_date: moment(new Date(this.fields.endDate.value)).format(timestampFormatString),
-                    completion_notes: this.fields.completion_notes.value?.trim() ?? '',
-                    issues_arrising: this.fields.issues_arrising.value?.trim() ?? '',
-                }),
-                headers: {
-                  "Content-Type": "application/json; charset=UTF-8"
+            
+            const formData = new FormData(e.target)
+            formData.set('client_id', this.fields.client.value)
+            formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
+            formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
+
+            const config = {
+                withCredentials: true,
+                onUploadProgress: progressEvent => {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    console.log(`upload progress: ${percentCompleted}`);
                 }
-              })
-                .then(async (response) => {
-                    if(!response.ok) {
-                        let errorMsg = await response.text()
-                        throw new Error(errorMsg)
-                    }
-                    return response.json();
-                })
-                .then((newJob) => {
-                    Alpine.store('jobs').isLoaded = true
-                    Alpine.store('jobs').addJob(newJob)
-                    showAlert('alert-success', 'Success!', 'Successfully added job')
-                })
-                .catch(e => {
-                    Alpine.store('jobs').isLoaded = true
-                    showAlert('alert-danger', 'Error occured', `Error adding job: ${e}`, 3500)
-                })
+            };
+            
+            axios.post('includes/add_job.inc.php', formData, config)
+            .then(res => {
+                const newJob = res.data
+                Alpine.store('jobs').isLoaded = true
+                Alpine.store('jobs').addJob(newJob)
+                showAlert('alert-success', 'Success!', 'Successfully added job')
+            })
+            .catch(e => {
+                Alpine.store('jobs').isLoaded = true
+                showAlert('alert-danger', 'Error occured', `Error adding job: ${e.response.data}`, 3500)
+                console.log(e.response.data)
+            });
             this.clearForm()
         },
         submitEdit(jobId, fields = {
@@ -174,7 +168,15 @@ function formdata() {
                 return
             }
             Alpine.store('jobs').isLoaded = false
-            
+            // create formdata for files if there are any files
+            const files = $('files').files
+            if (files.length) {
+                formdata = new FormData()
+                for (let i = 0; i < files.length; i++) {
+                    formdata.append('file', files.item(i))
+                }
+                fields[files] = formdata
+            }
             fetch("includes/update_job.inc.php", {
                 method: "POST",
                 mode: "same-origin",
@@ -243,6 +245,38 @@ function formdata() {
         }
     }
 };
+
+function returnFileSize(number) {
+    if (number < 1024) {
+        return `${number} bytes`;
+    } else if (number >= 1024 && number < 1048576) {
+        return `${(number / 1024).toFixed(1)} KB`;
+    } else if (number >= 1048576) {
+        return `${(number / 1048576).toFixed(1)} MB`;
+    }
+}
+
+function shortenFileName(filename, size = 15) {
+    let portions = filename.split('.')
+    if (portions[0].length <= size) {
+        return portions.join('.')
+    }
+    return [portions[0].slice(0, size) + '---' , portions.pop()].join('.');
+}
+
+function removeFileFromFileList(index, inputId) {
+    const dt = new DataTransfer()
+    const input = document.getElementById(inputId)
+    const { files } = input
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      if (index !== i)
+        dt.items.add(file) // here you exclude the file. thus removing it.
+    }
+    
+    input.files = dt.files // Assign the updates list
+}
 
 function clearFormErrors(fields) {
     Object.values(fields).forEach(field => field.error = null)
