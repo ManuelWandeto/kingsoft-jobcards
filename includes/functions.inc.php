@@ -1,5 +1,6 @@
 <?php
 session_start();
+define('UPLOAD_PATH', '../uploads/');
 function uidExists(mysqli $conn, string $username, string $email) {
     $sql = 'SELECT * FROM `jc_users` WHERE `username` = ? OR `email` = ?;';
     $stmt = mysqli_stmt_init($conn);
@@ -65,7 +66,7 @@ function signUpUser(mysqli $conn, array $user) {
     if (!isAuthorised(3)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
-    if(uidExists($conn, $user["username"], $user["email"])) {
+    if(uidExists($conn, $user["username"], $user["username"])) {
         throw new Exception("This user already exists!", 400);
     }
     $sql = 'INSERT INTO jc_users (username, email, role, password, created_at) VALUES (?, ?, ?, ?, null);';
@@ -275,7 +276,57 @@ function updateUserRole(mysqli $conn, int $id, string $role) {
     return true;
 }
 
+function uploadFiles() {
+    if (!isset($_FILES['attachments']['name'])) {
+        throw new Exception("attachments is not set", 500);
+    }
+    $files = array_filter($_FILES['attachments']['name']);
+    $paths = [];
+    $total = count($files);
+    if(!$total) {
+        return false;
+    }
+    for ($i=0; $i < $total; $i++) { 
+        if($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
+            $upload_dir = UPLOAD_PATH . explode(' ', $_SESSION['username'])[0] . '/';
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            $filename = $_FILES['attachments']['name'][$i];
+            $tempPath = $_FILES['attachments']['tmp_name'][$i];
+            $filepath = $upload_dir . basename($_FILES['attachments']['name'][$i]);
+            $acceptedTypes = array('doc', 'docx', 'pdf', 'csv', 'xlsx');
+            $fileType = strtolower(pathinfo($_FILES['attachments']['name'][$i], PATHINFO_EXTENSION));
+            // check if file already exists
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            };
+            // check if file size exceeds 30mb
+            if ($_FILES['attachments']['size'][$i] > 30000000) {
+                throw new Exception("$filename exceeds 30mb!", 400);
+            }
+            // check if file is not of an accepted type
+            if (!in_array($fileType, $acceptedTypes) && strpos($_FILES['attachments']['type'][$i], 'image/') !== 0) {
+                throw new Exception("$filename is not of an accepted type, only documents and images", 400);
+            }
+            if ($tempPath) {
+                if(move_uploaded_file($tempPath, $filepath)) {
+                    $paths[] = $filepath;
+                } else {
+                    return false;
+                }
+            } else {
+                throw new Exception("error reading temp path of file", 500);
+            }
+        } else {
+            throw new Exception("upload error", 500);
+        }
+    }
+    return $paths;
+}
 function addJob(mysqli $conn, array $jobData) {
+    $filepaths = uploadFiles();
+    
     $sql = 'INSERT INTO jc_jobcards 
                 (
                     `project`, 
@@ -321,6 +372,24 @@ function addJob(mysqli $conn, array $jobData) {
     }
     mysqli_stmt_close($stmt);
     $lastInsertId = mysqli_insert_id($conn);
+    if ($filepaths) {
+        // IF attachments have been uploaded, post them to the attachments table
+        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_path`) VALUES (?, ?)';
+        $stmt = mysqli_stmt_init($conn);
+        if(!mysqli_stmt_prepare($stmt, $sql)) {
+            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+        }
+        for ($i=0; $i < count($filepaths); $i++) { 
+            $boundOk = mysqli_stmt_bind_param($stmt, 'is', $lastInsertId, $filepaths[$i]);
+            if (!$boundOk) {
+                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+            }
+            if(!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Error executing insert attachment query: ".mysqli_stmt_error($stmt), 500);
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
     $newJob = IdExists($conn, $lastInsertId, 'jc_jobcards');
     if (!$newJob) {
         throw new Exception("Error getting inserted job", 500);
