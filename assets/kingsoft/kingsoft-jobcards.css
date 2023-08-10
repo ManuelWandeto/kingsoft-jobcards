@@ -116,6 +116,49 @@ form .form-group div.custom-datepicker > input:first-child {
     border-right: 1.4px solid #E3E3E3;
 }
 
+form div.form-group input[type=file] {
+    position: static;
+    opacity: 1;
+    border: 1px dashed #E3E3E3;
+    border-radius: 16px;
+    box-sizing: border-box;
+    padding: 16px;
+}
+
+div.selected-files {
+    display: flex;
+    gap: 14px;
+    overflow: auto;
+    font-size: .75rem;
+    font-family: 'Verdana';
+
+/* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.selected-files::-webkit-scrollbar {
+    display: none;
+}
+
+div.selected-files div.file-info {
+    flex-shrink: 0;
+    padding: 8px;
+    border: 1px dashed #339DE8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: space-between;
+    border-radius: 12px;
+}
+div.selected-files div.file-info i {
+    font-size: .875rem;
+    color: #339DE8;
+}
+div.selected-files div.file-info span.size {
+    font-weight: 600;
+}
+
 div.card table.persons-list thead tr th,
 div.card table.alltime-jobs thead tr th {
     padding: 12px 16px 12px 8px;
