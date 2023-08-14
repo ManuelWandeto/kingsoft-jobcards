@@ -18,7 +18,7 @@
       <div class="card-body">
         <form method="POST" enctype="multipart/form-data" 
           x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
-          submitEdit(job.id)
+          submitEdit(job.id, $event)
           document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
           editMode = false
         } : ()=> {
@@ -96,7 +96,7 @@
             <div class="form-group pr-sm-2">
               <label for="assignee">Assigned to</label>
               <!-- Can set assigned_to and supervisor fields to be disabled if: "editMode && fields.assignee.value.trim()" -->
-              <select name="assignee" class="custom-select" id="assignee" 
+              <select name="assigned_to" class="custom-select" id="assignee" 
                 x-model="fields.assignee.value" 
                 :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
               >
@@ -108,7 +108,7 @@
             </div>
             <div class="form-group">
               <label for="supervisor">Supervised by</label>
-              <select name="supervisor" class="custom-select" id="supervisor" 
+              <select name="supervised_by" class="custom-select" id="supervisor" 
                 x-model="fields.supervisor.value"
                 :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
               >
@@ -217,25 +217,71 @@
               <input type="file" id="files" name ="attachments[]" class="form-control" 
                 multiple accept=".doc,.docx,.pdf,.csv,.xlsx,image/*"
                 @change="()=>{
-                  fields.files = Array.from($event.target.files)
+                  let inputFiles = Array.from($event.target.files)
+                  if (!editMode || !fields.files?.length) {
+                    fields.files = inputFiles
+                    return
+                  }
+                  fields.files = [...fields.files, ...inputFiles]
                 }"
               >
-              <div class="selected-files mt-3 px-2" x-show="fields.files.length" x-cloak x-transition>
-                <template x-for="file in fields.files">
-                  <div class="file-info">
-                    <i class="now-ui-icons" :class="file.type.includes('image') ? 'design_image' : 'files_paper'"></i>
-                    <span class="name" x-text="shortenFileName(file.name)"></span>
-                    <span class="size" x-text="returnFileSize(file.size)"></span>
-                    <button type="button" class="icon-button" @click="()=>{
-                      const i = fields.files.findIndex(f => f.name === file.name)
-                      removeFileFromFileList(i, 'files')
-                      fields.files.splice(i, 1)
-                    }">
-                      <i style="color: #dc3545;" class="now-ui-icons ui-1_simple-remove"></i>
-                    </button>
-                  </div>
-                </template>
-              </div>
+              <template x-if="fields.files?.length">
+                <div class="selected-files mt-3 px-2" x-show="fields.files?.length" x-cloak x-transition>
+                  <template x-for="file in fields.files" :key="index">
+                    <div class="file-info">
+                      <i class="now-ui-icons" :class="file.type.includes('image') ? 'design_image' : 'files_paper'"></i>
+                      <span class="name" x-text="shortenFileName(file.name)"></span>
+                      <span class="size" x-text="returnFileSize(file.size)"></span>
+                      <template x-if="!file.db_path || file.db_path.includes(`user_${session.id}`)">
+                        <div x-id="['delete-file']">
+                          <button type="button" class="icon-button" @click="()=>{
+                            const i = fields.files.findIndex(f => f.name === file.name)
+                            if(!file.db_path) {
+                              removeFileFromFileList(file.name, 'files')
+                              fields.files.splice(i, 1)
+                              return
+                            }
+                            $(`#${$id('delete-file')}`).modal('show')
+                          }">
+                            <i style="color: #dc3545;" id="deletefile" class="now-ui-icons ui-1_simple-remove"></i>
+                          </button>
+                          <!-- Modal -->
+                          <div class="modal fade" :id="$id('delete-file')" tabindex="-1" role="dialog" aria-labelledby="deletefile" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                              <div class="modal-content">
+                                <div class="modal-header">
+                                  <h5 class="modal-title">Are you sure?</h5>
+                                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                  </button>
+                                </div>
+                                <div class="modal-body">
+                                  <p x-text="`This will delete the uploaded file: ${file.name} from the server, continue?`"></p>
+                                </div>
+                                <div class="modal-footer">
+                                  <button type="button" class="btn btn-secondary mr-3" data-dismiss="modal">Close</button>
+                                  <button type="button" class="btn btn-primary" data-dismiss="modal" @click = "() => {
+                                    deleteUploadedFile(file.db_path).then(ok => {
+                                      const i = fields.files.findIndex(f => f.name === file.name)
+  
+                                      fields.files.splice(i, 1)
+                                      job.files = job.files.filter(f => f.name !== file.name)
+                                      $(`#${$id('delete-file')}`).modal('hide')
+                                    }).catch(e => {
+                                      console.log(e)
+                                      $(`#${$id('delete-file')}`).modal('hide')
+                                    })
+                                  }">Delete file</button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </template>
           </div>
           <div class="form-group action-group">
             <template x-if="editMode">
