@@ -173,6 +173,9 @@
                             Status
                         </th>
                         <th>
+                            Files
+                        </th>
+                        <th>
                             Completion notes
                         </th>
                         <th>
@@ -210,6 +213,59 @@
                                     </div>
                                 </td>
                                 <td x-text="job.status" :class="job.status.toLowerCase()"></td>
+                                <td>
+                                    <template x-if="job.files && job.files?.length">
+                                        <div x-id="['attachments']">
+                                            <button type="button" class="btn btn-info" data-toggle="modal"
+                                                :data-target="'#'+$id('attachments', job.id)">
+                                                <i class="now-ui-icons files_box"></i>
+                                            </button>
+        
+                                            <!-- Modal -->
+                                            <div class="modal fade" :id="$id('attachments', job.id)" tabindex="-1"
+                                                role="dialog" aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Attachments</h5>
+                                                            <button type="button" class="close" data-dismiss="modal"
+                                                                aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="container">
+                                                                <div class="attachments">
+                                                                    <template x-for="file in job.files">
+                                                                        <div class="file-info">
+                                                                            <div class="name">
+                                                                                <i class="now-ui-icons" :class="file.type.includes('image') ? 'design_image' : 'files_paper'"></i>
+                                                                                <span class="name" x-text="shortenFileName(file.name, 25)"></span>
+                                                                            </div>
+                                                                            <div class="download">
+                                                                                <strong class="size" x-text="returnFileSize(file.size)"></strong>
+                                                                                <a :href="`controllers/download.php?name=${file.name}&size=${file.size}&type=${file.type}`" 
+                                                                                    class="icon-button"
+                                                                                >
+                                                                                    <i class="now-ui-icons arrows-1_cloud-download-93"></i>
+                                                                                </a>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary"
+                                                                data-dismiss="modal">Close</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- End Of Modal -->
+                                        </div>
+                                    </template>
+                                </td>
                                 <td>
                                     <template x-if="job.completion_notes?.trim()">
                                         <div x-id="['completion_notes']">
