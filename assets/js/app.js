@@ -57,7 +57,8 @@ function formdata() {
             },
             files: []
         },
-        editJob({project, client_id, location, description, priority, status, assigned_to, supervised_by, start_date, end_date, completion_notes, issues_arrising}) {
+        editJob({id, project, client_id, location, description, priority, status, assigned_to, supervised_by, start_date, end_date, completion_notes, issues_arrising}) {
+            this.clearForm()
             clearFormErrors(this.fields)
             this.fields.location.value = location
             this.fields.client.value = client_id
@@ -72,6 +73,7 @@ function formdata() {
             this.fields.endDate.value = moment(end_date).format(timestampFormatString)
             this.fields.completion_notes.value = completion_notes?.trim()
             this.fields.issues_arrising.value = issues_arrising?.trim()
+            this.fields.files = Alpine.store('jobs').jobs.find(j => j.id == id).files
             this.isFormValid()
 
         },
@@ -89,7 +91,7 @@ function formdata() {
         },
         isFormValid(){
             this.isFormInvalid = Object.values(this.fields).some(
-                (field) => field.error
+                (field) => field?.error
             );
             return ! this.isFormInvalid ;
         },
@@ -109,10 +111,8 @@ function formdata() {
             this.fields.issues_arrising.value = ""
             clearFormErrors(this.fields)
             // TODO: clear selected files if any
-            for (let i = 0; i < this.fields.files.length; i++) {
-                removeFileFromFileList(i, 'files')
-                this.fields.files.splice(i, 1)
-            }
+            document.querySelector('input#files').files = new DataTransfer().files
+            this.fields.files = []
             this.isFormValid()
         },
         submit(e) {
@@ -145,68 +145,52 @@ function formdata() {
             .catch(e => {
                 Alpine.store('jobs').isLoaded = true
                 showAlert('alert-danger', 'Error occured', `Error adding job: ${e.response.data}`, 3500)
-                console.log(e.response.data)
             });
             this.clearForm()
         },
-        submitEdit(jobId, fields = {
-            project: this.fields.project.value,
-            client_id: this.fields.client.value,
-            location: this.fields.location.value,
-            description: this.fields.description.value,
-            priority: this.fields.priority.value,
-            status: this.fields.status.value,
-            assigned_to: this.fields.assignee.value,
-            supervised_by: this.fields.supervisor.value,
-            start_date: moment(new Date(this.fields.startDate.value)).format(timestampFormatString),
-            end_date: moment(new Date(this.fields.endDate.value)).format(timestampFormatString),
-            completion_notes: this.fields.completion_notes.value?.trim() ?? '',
-            issues_arrising: this.fields.issues_arrising.value?.trim() ?? '',
-        }) {
+
+        submitEdit(jobId, e) {
             var ok = this.isFormValid();
             if( ! ok ) {
                 return
             }
             Alpine.store('jobs').isLoaded = false
-            // create formdata for files if there are any files
-            const files = $('files').files
-            if (files.length) {
-                formdata = new FormData()
-                for (let i = 0; i < files.length; i++) {
-                    formdata.append('file', files.item(i))
+            const formData = new FormData(e.target)
+            formData.append('id', jobId)
+            // set fields that may be disabled on edit
+            formData.set('project', this.fields.project.value)
+            formData.set('priority', this.fields.priority.value)
+            formData.set('description', this.fields.description.value)
+            formData.set('assigned_to', this.fields.assignee.value ?? null)
+            formData.set('supervised_by', this.fields.supervisor.value ?? null)
+            formData.set('location', this.fields.location.value)
+            formData.set('status', this.fields.status.value)
+            formData.set('client_id', this.fields.client.value)
+            formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
+            formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
+
+            const config = {
+                withCredentials: true,
+                onUploadProgress: progressEvent => {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    console.log(`upload progress: ${percentCompleted}`);
                 }
-                fields[files] = formdata
-            }
-            fetch("includes/update_job.inc.php", {
-                method: "POST",
-                mode: "same-origin",
-                credentials: "same-origin",
-                body: JSON.stringify({
-                    id: jobId,
-                    ...fields
-                }),
-                headers: {
-                  "Content-Type": "application/json; charset=UTF-8"
-                }
-              })
-                .then(async (response) => {
-                    if(!response.ok) {
-                        let errorMsg = await response.text()
-                        throw new Error(errorMsg)
-                    }
-                    return response.json();
-                })
-                .then((updatedJob) => {
-                    Alpine.store('jobs').isLoaded = true
-                    Alpine.store('jobs').editJob(updatedJob.id, updatedJob)
-                    showAlert('alert-success', 'Success!', 'Successfully updated job')
-                })
-                .catch(e => {
-                    Alpine.store('jobs').isLoaded = true
-                    showAlert('alert-danger', 'Error occured', `Error updating job: ${e}`, 3500)
-                })
+            };
+            axios.post('includes/update_job.inc.php', formData, config)
+            .then((res) => {
+                updatedJob = res.data
+                Alpine.store('jobs').isLoaded = true
+                Alpine.store('jobs').editJob(updatedJob.id, updatedJob)
+                showAlert('alert-success', 'Success!', 'Successfully updated job')
+            })
+            .catch(e => {
+                Alpine.store('jobs').isLoaded = true
+                showAlert('alert-danger', 'Error occured', `Error updating job: ${e.response.data}`, 3500)
+            })
             this.clearForm()
+
         },
+
         finaliseJob(jobId, fields = {
             status: 'COMPLETED',
             completion_notes: this.fields.completion_notes.value,
@@ -264,22 +248,37 @@ function shortenFileName(filename, size = 15) {
     return [portions[0].slice(0, size) + '---' , portions.pop()].join('.');
 }
 
-function removeFileFromFileList(index, inputId) {
+function removeFileFromFileList(filename, inputId) {
     const dt = new DataTransfer()
     const input = document.getElementById(inputId)
     const { files } = input
     
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      if (index !== i)
+      if (filename !== file.name)
         dt.items.add(file) // here you exclude the file. thus removing it.
     }
     
     input.files = dt.files // Assign the updates list
 }
 
+async function deleteUploadedFile(path) {
+    try {
+        await axios.delete('includes/delete_file.inc.php', {data: {filepath: path}})
+        showAlert('alert-success', 'Success!', 'Successfully deleted file')
+        return true;
+    } catch (e) {
+        showAlert('alert-danger', 'Error occured', `Error deleting file: ${e}`, 3500)
+        return false;
+    }
+}
+
 function clearFormErrors(fields) {
-    Object.values(fields).forEach(field => field.error = null)
+    Object.values(fields).forEach(field => {
+        if (field?.error) {
+            field.error = null
+        }
+    })
 }
 
 function showAlert(className, heading, message, duration=2500) {
