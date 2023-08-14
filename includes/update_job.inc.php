@@ -3,23 +3,21 @@
 include_once('db.inc.php');
 include_once('functions.inc.php');
 include_once('../utils/respond.php');
+include_once('../utils/convert.php');
 
-$content = trim(file_get_contents("php://input"));
+if (isset($_SERVER['CONTENT_LENGTH']) 
+    && (int) $_SERVER['CONTENT_LENGTH'] > convertToBytes(ini_get('post_max_size'))) 
+{
+    respondWith(400, 'File too large');
+}
 
-$decoded = json_decode($content, true);
-
-  //If json_decode failed, the JSON is invalid.
-if( is_array($decoded)) {
-    try {
-        $job = updateJob($conn, $decoded);
-        if (!$job) {
-            throw new Exception("Error updating job with id: ". $decoded['id'], 500);
-        }
-        echo json_encode($job);
-        exit();
-    } catch (Exception $e) {
-        respondWith($e->getCode(), $e->getMessage());
+try {
+    $job = updateJob($conn, $_POST);
+    if (!$job) {
+        throw new Exception("Error updating job with id: ". $_POST['id'], 500);
     }
-} else {
-    respondWith(500, "Invalid json received");
+    echo json_encode($job);
+    exit();
+} catch (Exception $e) {
+    respondWith($e->getCode(), $e->getMessage());
 }
