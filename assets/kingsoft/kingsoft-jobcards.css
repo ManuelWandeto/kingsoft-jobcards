@@ -179,6 +179,37 @@ div.card table.alltime-jobs tbody {
     border-bottom: 1px solid #E3E3E3;
 }
 
+div.attachments {
+    max-height: 400px;
+    overflow-y: auto;
+}
+div.attachments div.file-info {
+    padding: 12px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+div.attachments div.file-info .download,
+div.attachments div.file-info .name {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+div.attachments div.file-info .name {
+    font-family: 'Montserrat';
+    color: black;
+}
+div.attachments div.file-info .download {
+    font-family: 'Verdana';
+}
+div.attachments div.file-info i {
+    font-size: 1rem;
+}
+
+div.attachments div.file-info .download i {
+    color: #339DE8;
+}
+
 div.datetime {
     display: flex;
     flex-direction: column;
@@ -282,6 +313,7 @@ table td div.job-actions {
     gap: 12px;
 }
 
+div.attachments a.icon-button,
 div.sidebar button.icon-button,
 form button.icon-button,
 div.filters div.search button.icon-button,
