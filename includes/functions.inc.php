@@ -25,9 +25,23 @@ function uidExists(mysqli $conn, string $username, string $email) {
     return $result;
 }
 
-function IdExists(mysqli $conn, int $id, string $tableName, string $idColumn = 'id') {
-    $stmt = mysqli_stmt_init($conn);
+/**
+ * Summary of IdExists
+ * @param mysqli $conn
+ * @param int $id
+ * @param string $tableName
+ * @param string $idColumn
+ * @throws \Exception
+ * @return array|bool
+ */
+function IdExists(
+    mysqli $conn, 
+    int $id, 
+    string $tableName, 
+    string $idColumn = 'id'
+) {
     $sql = "SELECT * FROM $tableName WHERE $idColumn = ?;";
+    $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
     }
@@ -45,6 +59,36 @@ function IdExists(mysqli $conn, int $id, string $tableName, string $idColumn = '
     $record = mysqli_fetch_assoc($result);
     $result = false;
     if (is_array($record)) {
+        $result = $record;
+    }
+    mysqli_stmt_close($stmt);
+    return $result;
+}
+function queryRow(
+    mysqli $conn, 
+    string $queryName,
+    string $sql,
+    string $paramTypes,
+    ...$params
+) {
+    $stmt = mysqli_stmt_init($conn);
+    if(!mysqli_stmt_prepare($stmt, $sql)) {
+        throw new Exception("Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
+    }
+    if (!mysqli_stmt_bind_param($stmt, $paramTypes, ...$params)) {
+        throw new Exception("Error binding parameters to $queryName: ".mysqli_stmt_error($stmt), 400);
+    }
+    if(!mysqli_stmt_execute($stmt)) {
+        throw new Exception("Error executing $queryName query: ".mysqli_stmt_error($stmt), 500);
+    }
+
+    $result = mysqli_stmt_get_result($stmt);
+    if(!$result) {
+        throw new Exception("Error getting query results: ".mysqli_stmt_error($stmt), 500);
+    }
+    $record = mysqli_fetch_assoc($result);
+    $result = false;
+    if ($record) {
         $result = $record;
     }
     mysqli_stmt_close($stmt);
@@ -288,7 +332,7 @@ function uploadFiles() {
     }
     for ($i=0; $i < $total; $i++) { 
         if($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
-            $upload_dir = UPLOAD_PATH . explode(' ', $_SESSION['username'])[0] . '/';
+            $upload_dir = UPLOAD_PATH . 'user_'. $_SESSION['user_id'] . '/';
             if (!file_exists($upload_dir)) {
                 mkdir($upload_dir, 0777, true);
             }
@@ -301,10 +345,6 @@ function uploadFiles() {
             if (file_exists($filepath)) {
                 unlink($filepath);
             };
-            // check if file size exceeds 30mb
-            if ($_FILES['attachments']['size'][$i] > 30000000) {
-                throw new Exception("$filename exceeds 30mb!", 400);
-            }
             // check if file is not of an accepted type
             if (!in_array($fileType, $acceptedTypes) && strpos($_FILES['attachments']['type'][$i], 'image/') !== 0) {
                 throw new Exception("$filename is not of an accepted type, only documents and images", 400);
@@ -319,13 +359,83 @@ function uploadFiles() {
                 throw new Exception("error reading temp path of file", 500);
             }
         } else {
-            throw new Exception("upload error", 500);
+            $file = $_FILES['attachments']['name'][$i];
+
+            switch ($_FILES['attachments']['error'][$i]) {
+                case UPLOAD_ERR_INI_SIZE:
+                    throw new Exception("$file exceeds max allowed size", 400);
+
+                case UPLOAD_ERR_PARTIAL:
+                    throw new Exception("$file was only partially uploaded", 500);
+
+                case UPLOAD_ERR_NO_TMP_DIR:
+                    throw new Exception("$file missing a temporary folder", 500);
+
+                case UPLOAD_ERR_NO_FILE:
+                    throw new Exception("$file was not uploaded", 500);
+                    
+                case UPLOAD_ERR_CANT_WRITE:
+                    throw new Exception("Failed to write $file to disk", 500);
+            
+                default:
+                    throw new Exception("Uncaught upload error", 500);
+            }
         }
     }
     return $paths;
 }
+
+function deleteUploadedFile(mysqli $conn, string $filepath) {
+    $filename = basename($filepath);
+    
+    if (!file_exists($filepath)) {
+        throw new Exception("$filename doesn't exist", 404);
+    }
+    if (!strpos(dirname($filepath), 'user_'. $_SESSION['user_id'])) {
+        throw new Exception("Unauthorised deletion, you can only delete files you posted", 401);
+    }
+    deleteAttachment($conn, $filepath);
+    unlink($filepath);
+    return true;
+}
+
+function deleteAttachment(mysqli $conn, string $filepath) {
+    $sql = "DELETE FROM jc_attachments WHERE `file_path` = ?;";
+    $stmt = mysqli_stmt_init($conn);
+    if (!mysqli_stmt_prepare($stmt, $sql)) {
+        throw new Exception("Error preparing delete attachment query: ".mysqli_stmt_error($stmt), 500);
+    }
+    if (!mysqli_stmt_bind_param($stmt, 's', $filepath)) {
+        throw new Exception("Error binding params to delete attachment query: ".mysqli_stmt_error($stmt), 400);
+    }
+    if (!mysqli_stmt_execute($stmt)) {
+        throw new Exception("Error executing delete attachment query: ".mysqli_stmt_error($stmt), 500);
+    }
+    mysqli_stmt_close($stmt);
+}
+function getFileInfo(string $filepath) {
+    $filename = basename($filepath);
+    if (!file_exists($filepath)) {
+        throw new Exception("Error getting file info: $filename doesn't exist", 404);
+    }
+    $filesize = filesize($filepath);
+    $filetype = mime_content_type($filepath);
+    $lastModified = filemtime($filepath);
+    return [
+        "name" => $filename,
+        "size" => $filesize,
+        "type" => $filetype,
+        "db_path" => $filepath,
+        "lastModified" => $lastModified
+    ];
+}
 function addJob(mysqli $conn, array $jobData) {
-    $filepaths = uploadFiles();
+    $filepaths = [];
+    try {
+        $filepaths = uploadFiles();
+    } catch (Exception $e) {
+        throw $e;
+    }
     
     $sql = 'INSERT INTO jc_jobcards 
                 (
@@ -390,9 +500,40 @@ function addJob(mysqli $conn, array $jobData) {
         }
         mysqli_stmt_close($stmt);
     }
-    $newJob = IdExists($conn, $lastInsertId, 'jc_jobcards');
+    $getNewJob = "
+        SELECT 
+            j.id, 
+            j.project, 
+            j.client_id,
+            j.priority,
+            j.assigned_to,
+            j.supervised_by,
+            j.description,
+            j.`location`,
+            j.status,
+            j.start_date,
+            j.end_date,
+            j.completion_notes,
+            j.issues_arrising,
+            GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
+            j.created_at
+        FROM jc_jobcards as j
+        LEFT JOIN jc_attachments as a
+        ON j.id = a.jobcard_id
+        WHERE j.id = ?
+        GROUP BY j.id;
+    ";
+    $newJob = queryRow($conn, 'get inserted job', $getNewJob, 'i', $lastInsertId); 
     if (!$newJob) {
         throw new Exception("Error getting inserted job", 500);
+    }
+    if($newJob['files']) {
+        $files = [];
+        $paths = explode(',', $newJob['files']);
+        foreach ($paths as $path) {
+            $files[] = getFileInfo($path);
+        }
+        $newJob['files'] = $files;
     }
     return $newJob;
 }
@@ -405,7 +546,29 @@ function getJobs(mysqli $conn) {
 
     $results = mysqli_query(
         $conn, 
-        "SELECT * FROM jc_jobcards ORDER BY priority DESC, status DESC, created_at ASC;"
+        "
+        SELECT 
+            j.id, 
+            j.project, 
+            j.client_id,
+            j.priority,
+            j.assigned_to,
+            j.supervised_by,
+            j.description,
+            j.`location`,
+            j.status,
+            j.start_date,
+            j.end_date,
+            j.completion_notes,
+            j.issues_arrising,
+            GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
+            j.created_at
+        FROM jc_jobcards as j
+        LEFT JOIN jc_attachments as a
+        ON j.id = a.jobcard_id
+        GROUP BY j.id
+        ORDER BY priority DESC, status DESC, created_at ASC;
+        "
     );
     $jobs = [];
     if (!$results) {
@@ -415,25 +578,50 @@ function getJobs(mysqli $conn) {
         return $jobs;
     }
     while ($row = mysqli_fetch_assoc($results)) {
+        if($row['files']) {
+            $files = [];
+            $paths = explode(',', $row['files']);
+            foreach ($paths as $path) {
+                try {
+                    $files[] = getFileInfo($path);
+                } catch (Exception $e) {
+                    if($e->getCode() == 404) {
+                        deleteAttachment($conn, $path);
+                        continue;
+                    }
+                    throw $e;
+                }
+            }
+            $row['files'] = $files;
+        }
         $jobs[] = $row;
     }
     return $jobs;
 }
 
 function updateJob(mysqli $conn, array $job) {
+    $filepaths = [];
+    try {
+        $filepaths = uploadFiles();
+    } catch (Exception $e) {
+        throw $e;
+    }
+
     $id = $job['id'];
     // check if row with given id exists
     if (!IdExists($conn, $id, 'jc_jobcards')) {
         throw new Exception("Job record with id: $id not found", 404);
     }
-    // if id exists, perform update
-    $sql = 'UPDATE jc_jobcards 
+    $assignee = htmlspecialchars(trim($job['assigned_to']," ;$\n\r\t\v\x00")) ?? null;
+    $supervisor = htmlspecialchars(trim($job["supervised_by"]," ;$\n\r\t\v\x00")) ?? null;
+    
+    $sql = "UPDATE jc_jobcards 
             SET     
                 `project` = ?, 
                 client_id = ?, 
                 `priority` = ?,  
-                `assigned_to` = ?, 
-                `supervised_by` = ?, 
+                `assigned_to` = $assignee, 
+                `supervised_by` = $supervisor, 
                 `description` = ?, 
                 `location` = ?, 
                 `status` = ?, 
@@ -441,19 +629,17 @@ function updateJob(mysqli $conn, array $job) {
                 `end_date` = ?, 
                 completion_notes = ?, 
                 issues_arrising = ?
-            WHERE id = ?;';
+            WHERE id = ?;";
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
     }
     if (!mysqli_stmt_bind_param(
             $stmt, 
-            'sisiisssssssi', 
+            'sissssssssi', 
             $job['project'], 
             $job['client_id'], 
             $job['priority'], 
-            $job['assigned_to'], 
-            $job['supervised_by'], 
             $job['description'], 
             $job['location'], 
             $job['status'], 
@@ -466,10 +652,62 @@ function updateJob(mysqli $conn, array $job) {
         throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
     }
     if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing insert client query: ". mysqli_stmt_error($stmt), 500);
+        throw new Exception("Error executing update job query: ". mysqli_stmt_error($stmt), 500);
     }
     mysqli_stmt_close($stmt);
-    $updatedJob = IdExists($conn,  $id, 'jc_jobcards');
+    if ($filepaths) {
+        // IF attachments have been uploaded, post them to the attachments table
+        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_path`) VALUES (?, ?)';
+        $stmt = mysqli_stmt_init($conn);
+        if(!mysqli_stmt_prepare($stmt, $sql)) {
+            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+        }
+        for ($i=0; $i < count($filepaths); $i++) { 
+            $boundOk = mysqli_stmt_bind_param($stmt, 'is', $id, $filepaths[$i]);
+            if (!$boundOk) {
+                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+            }
+            if(!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Error executing insert attachment query: ".mysqli_stmt_error($stmt), 500);
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+    $getUpdatedJob = "
+        SELECT 
+            j.id, 
+            j.project, 
+            j.client_id,
+            j.priority,
+            j.assigned_to,
+            j.supervised_by,
+            j.description,
+            j.`location`,
+            j.status,
+            j.start_date,
+            j.end_date,
+            j.completion_notes,
+            j.issues_arrising,
+            GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
+            j.created_at
+        FROM jc_jobcards as j
+        LEFT JOIN jc_attachments as a
+        ON j.id = a.jobcard_id
+        WHERE j.id = ?
+        GROUP BY j.id;
+    ";
+    $updatedJob = queryRow($conn, 'get inserted job', $getUpdatedJob, 'i', $id); 
+    if (!$updatedJob) {
+        throw new Exception("Error getting inserted job", 500);
+    }
+    if($updatedJob['files'] ) {
+        $files = [];
+        $paths = explode(',', $updatedJob['files']);
+        foreach ($paths as $path) {
+            $files[] = getFileInfo($path);
+        }
+        $updatedJob['files'] = $files;
+    }
     return $updatedJob;
 }
 function finaliseJob(mysqli $conn, array $job) {
