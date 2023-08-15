@@ -650,7 +650,7 @@ function deleteClient(id) {
         .then(ok => {
             if (ok) {
                 Alpine.store('clients').deleteClient(id)
-                associatedJob = Alpine.store('jobs').jobs.find(j => j.client_id === id)
+                associatedJob = Alpine.store('jobs').jobs.find(j => j.client_id == id)
                 if(associatedJob) {
                     Alpine.store('jobs').deleteJob(associatedJob.id)
                     showAlert('alert-success', 'Success!', 'Successfully deleted client and associated jobs')
