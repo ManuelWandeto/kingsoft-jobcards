@@ -65,8 +65,8 @@
     }
   </script>
 </head>
-
-<body class="" style="max-height:98%;" x-data="{showSidebar: false, showJobcardForm: false, showUserSection: false}">
+<!-- TODO: set showJobcardForm: false -->
+<body class="" style="max-height:98%;" x-data="{showSidebar: false, showJobcardForm: true, showUserSection: false}">
   <div class="wrapper ">
     <div class="sidebar-overlay" x-transition.opacity x-show="showSidebar" @click="showSidebar = false"></div>
     <div class="sidebar" :class="showSidebar && 'active'" data-color="orange">
@@ -181,7 +181,7 @@
             include_once('users_section.php');
           }
         ?>
-        <div id="alert-slot" style="max-width: 300px; position: fixed; top: 2%; right: 5%; z-index: 999;">
+        <div id="alert-slot" style="max-width: 300px; position: fixed; top: 2%; right: 5%; z-index: 999999;">
 
         </div>
       </div>
