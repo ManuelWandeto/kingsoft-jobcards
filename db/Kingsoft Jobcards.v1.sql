@@ -54,6 +54,8 @@ ALTER TABLE `jc_users` ADD CONSTRAINT unique_username_idx UNIQUE (username);
 
 ALTER TABLE `jc_users` ADD CONSTRAINT unique_email_idx UNIQUE (email);
 
+ALTER TABLE `jc_clients` ADD UNIQUE (`name`);
+
 DELIMITER $$
 CREATE TRIGGER jobcard_status_on_update 
 BEFORE UPDATE ON jc_jobcards
