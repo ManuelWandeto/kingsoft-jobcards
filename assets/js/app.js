@@ -433,6 +433,115 @@ function clientFormData() {
         }
     }
 }
+function tagFormData() {
+    Iodine.rule('notDefault', (value, param) => value !== param);
+    Iodine.setErrorMessage('notDefault', "color must not be the default color");
+    return {
+        fields: {
+            label: {
+                value: null, error: null,
+                rules: ["required", "maxLength:50", "minLength:2"]
+            },
+            colorcode: {
+                value: null, error: null,
+                rules: ["required", "maxLength:7", "minLength:7", "notDefault:#4C6B1F"]
+            }
+        },
+        editTag({label, colorcode}) {
+            clearFormErrors(this.fields)
+            this.fields.label.value = label
+            this.fields.colorcode.value = colorcode
+            this.isFormValid()
+        },
+        isFormInvalid: true,
+        validateField(field) {
+            let res = Iodine.assert(field.value, field.rules);
+            field.error = res.valid ? null : res.error;
+            this.isFormValid();
+        },
+        isFormValid(){
+            this.isFormInvalid = Object.values(this.fields).some(
+                (field) => field.error
+            );
+            return ! this.isFormInvalid ;
+        },
+        clearForm() {
+            this.fields.label.value = ""
+            this.fields.colorcode.value = "#4C6B1F"
+            clearFormErrors(this.fields)
+            this.isFormValid()
+        },
+        async submit(e) {
+            var ok = this.isFormValid();
+            if( ! ok ) {
+                return
+            }
+            Alpine.store('tags').isLoaded = false
+
+            axios.post('includes/add_tag.inc.php', {
+                label: this.fields.label.value,
+                colorcode: this.fields.colorcode.value
+            }, {
+                withCredentials: true,
+            })
+                .then(res => {
+                    newTag = res.data
+                    Alpine.store('tags').isLoaded = true
+                    Alpine.store('tags').addTag(newTag)
+                    showAlert('alert-success', 'Success!', 'Successfully added tag')
+                })
+                .catch(e => {
+                    Alpine.store('tags').isLoaded = true
+                    showAlert('alert-danger', 'Error occured', `Error adding tag: ${e.response.data}`, 3500)
+                })
+            
+            this.clearForm()
+            return
+        },
+        // submitEdit(clientId, fields = {
+        //     name: this.fields.name.value,
+        //     email: this.fields.email.value,
+        //     location: this.fields.location.value,
+        //     phone: this.fields.phone.value,
+        // }) {
+        //     var ok = this.isFormValid();
+        //     if( ! ok ) {
+        //         return
+        //     }
+        //     Alpine.store('clients').isLoaded = false
+        //     fetch("includes/update_client.inc.php", {
+        //         method: "POST",
+        //         mode: "same-origin",
+        //         credentials: "same-origin",
+        //         body: JSON.stringify({
+        //             id: clientId,
+        //             ...fields
+        //         }),
+        //         headers: {
+        //           "Content-Type": "application/json; charset=UTF-8",
+        //           "Accept": "application/json"
+        //         }
+        //       })
+        //         .then(async (response) => {
+        //             if(!response.ok) {
+        //                 let errorMsg = await response.text()
+        //                 throw new Error(errorMsg)
+        //             }
+        //             return response.json();
+        //         })
+        //         .then((updatedClient) => {
+        //             Alpine.store('clients').isLoaded = true
+        //             Alpine.store('clients').editClient(updatedClient.id, updatedClient)
+        //             showAlert('alert-success', 'Success!', 'Successfully updated client')
+        //         })
+        //         .catch(e => {
+        //             Alpine.store('clients').isLoaded = true
+        //             showAlert('alert-danger', 'Error occured', `Error updating client: ${e}`, 3500)
+        //         })
+        //     this.clearForm()
+        // }
+    }
+}
 function editUserForm() {
     return {
         fields: {
@@ -870,5 +979,26 @@ document.addEventListener('alpine:init', () => {
     }).catch(e=> {
         Alpine.store('users').isLoaded = true
         illustrateError('users-error-message', './assets/img/server_error.svg', "Internal server error occured")
+    })
+    Alpine.store('tags', {
+        list: [],
+        isLoaded: false,
+        getTag(id) {
+            return this.list.find(t => t.id == id)
+        },
+        editTag(tagId, fields) {
+            index = this.list.findIndex(t => t.id == tagId);
+            this.list[index] = {
+                ...this.list[index],
+                ...fields
+            }
+        },
+        addTag(tag) {
+            this.list.push({...tag})
+        },
+        deleteTag(tagId) {
+            index = this.list.findIndex(t => t.id == tagId);
+            this.list.splice(index, 1)
+        }
     })
 })
