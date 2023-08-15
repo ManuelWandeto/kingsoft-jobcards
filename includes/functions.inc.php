@@ -748,3 +748,40 @@ function finaliseJob(mysqli $conn, array $job) {
     mysqli_stmt_close($stmt);
     return $job;
 }
+
+function addTag(mysqli $conn, array $tag) {
+    $label = $tag['label'];
+    $color = $tag['colorcode'];
+    if(queryRow($conn, 'tag exists', 
+        "SELECT * FROM `jc_tags` WHERE `label` = ? OR `colorcode` = ?;", 'ss', $label, $color)
+    ) {
+        throw new Exception("A tag with that label or color already exists", 400);
+    }
+    $sql = 'INSERT INTO jc_tags 
+                (
+                    `label`, 
+                    colorcode, 
+                    created_at
+                ) 
+            VALUES (?, ?, null);';
+    $stmt = mysqli_stmt_init($conn);
+    if(!mysqli_stmt_prepare($stmt, $sql)) {
+        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+    }
+    $boundOk = mysqli_stmt_bind_param(
+        $stmt, 
+        'ss', 
+        $label,
+        $color
+    );
+    if (!$boundOk) {
+        throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+    }
+    if(!mysqli_stmt_execute($stmt)) {
+        throw new Exception("Error executing insert tag query: ".mysqli_stmt_error($stmt), 500);
+    }
+    mysqli_stmt_close($stmt);
+    $lastInsertId = mysqli_insert_id($conn);
+    $newTag = IdExists($conn, $lastInsertId, 'jc_tags');
+    return $newTag;
+}
