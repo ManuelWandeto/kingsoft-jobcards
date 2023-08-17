@@ -505,6 +505,24 @@ function addJob(mysqli $conn, array $jobData) {
         }
         mysqli_stmt_close($stmt);
     }
+    $tags = array_map('intval', explode(',', $jobData['tags'][0]));
+    if ($tags) {
+        $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?)';
+        $stmt = mysqli_stmt_init($conn);
+        if(!mysqli_stmt_prepare($stmt, $sql)) {
+            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+        }
+        for ($i=0; $i < count($tags); $i++) { 
+            $boundOk = mysqli_stmt_bind_param($stmt, 'ii', $lastInsertId, $tags[$i]);
+            if (!$boundOk) {
+                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+            }
+            if(!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Error executing insert tags query: ".mysqli_stmt_error($stmt), 500);
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
     $getNewJob = "
         SELECT 
             j.id, 
@@ -521,10 +539,13 @@ function addJob(mysqli $conn, array $jobData) {
             j.completion_notes,
             j.issues_arrising,
             GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
+            GROUP_CONCAT(t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
         LEFT JOIN jc_attachments as a
         ON j.id = a.jobcard_id
+        LEFT JOIN jc_jobcard_tags as t
+        ON j.id = t.jobcard_id
         WHERE j.id = ?
         GROUP BY j.id;
     ";
@@ -539,6 +560,10 @@ function addJob(mysqli $conn, array $jobData) {
             $files[] = getFileInfo($path);
         }
         $newJob['files'] = $files;
+    }
+    if($newJob['tags']) {
+        $tagsArray = explode(',', $newJob['tags']);
+        $newJob['tags'] = $tagsArray;
     }
     return $newJob;
 }
@@ -567,10 +592,13 @@ function getJobs(mysqli $conn) {
             j.completion_notes,
             j.issues_arrising,
             GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
+            GROUP_CONCAT(t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
         LEFT JOIN jc_attachments as a
         ON j.id = a.jobcard_id
+        LEFT JOIN jc_jobcard_tags as t
+        ON j.id = t.jobcard_id
         GROUP BY j.id
         ORDER BY priority DESC, status DESC, created_at ASC;
         "
@@ -598,6 +626,10 @@ function getJobs(mysqli $conn) {
                 }
             }
             $row['files'] = $files;
+        }
+        if($row['tags']) {
+            $tagsArray = explode(',', $row['tags']);
+            $row['tags'] = $tagsArray;
         }
         $jobs[] = $row;
     }
@@ -678,6 +710,55 @@ function updateJob(mysqli $conn, array $job) {
         }
         mysqli_stmt_close($stmt);
     }
+    $oldTagsRecord = queryRow(
+        $conn, 
+        'get tags for jobcard', 
+        "SELECT GROUP_CONCAT(t.tag_id) as tags FROM jc_jobcard_tags t WHERE  t.jobcard_id = ?;", 
+        'i',
+        $id
+    );
+    $oldTags = array_map('intval', explode(',', $oldTagsRecord['tags']));
+
+    $newTags = array_map('intval', explode(',', $job['tags'][0])) ?? [];
+    
+    // Get old tags not included in the new and remove them
+    $removedTags = array_values(array_diff($oldTags, $newTags));
+    if($removedTags) {
+        $sql = 'DELETE FROM jc_jobcard_tags WHERE jobcard_id = ? AND tag_id = ?;';
+        $stmt = mysqli_stmt_init($conn);
+        if(!mysqli_stmt_prepare($stmt, $sql)) {
+            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+        }
+        for ($i=0; $i < count($removedTags); $i++) { 
+            $boundOk = mysqli_stmt_bind_param($stmt, 'ii', $id, $removedTags[$i]);
+            if (!$boundOk) {
+                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+            }
+            if(!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Error executing detach removed tags query: ".mysqli_stmt_error($stmt), 500);
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+    // get new tags not already in the old and add them
+    $tags = array_values(array_diff($newTags, $oldTags));
+    if ($tags) {
+        $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?);';
+        $stmt = mysqli_stmt_init($conn);
+        if(!mysqli_stmt_prepare($stmt, $sql)) {
+            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+        }
+        for ($i=0; $i < count($tags); $i++) { 
+            $boundOk = mysqli_stmt_bind_param($stmt, 'ii', $id, $tags[$i]);
+            if (!$boundOk) {
+                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+            }
+            if(!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Error executing insert tags query: ".mysqli_stmt_error($stmt), 500);
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
     $getUpdatedJob = "
         SELECT 
             j.id, 
@@ -694,10 +775,13 @@ function updateJob(mysqli $conn, array $job) {
             j.completion_notes,
             j.issues_arrising,
             GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
+            GROUP_CONCAT(t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
         LEFT JOIN jc_attachments as a
         ON j.id = a.jobcard_id
+        LEFT JOIN jc_jobcard_tags as t
+        ON j.id = t.jobcard_id
         WHERE j.id = ?
         GROUP BY j.id;
     ";
@@ -712,6 +796,10 @@ function updateJob(mysqli $conn, array $job) {
             $files[] = getFileInfo($path);
         }
         $updatedJob['files'] = $files;
+    }
+    if($updatedJob['tags']) {
+        $tagsArray = explode(',', $updatedJob['tags']);
+        $updatedJob['tags'] = $tagsArray;
     }
     return $updatedJob;
 }
@@ -750,6 +838,9 @@ function finaliseJob(mysqli $conn, array $job) {
 }
 
 function addTag(mysqli $conn, array $tag) {
+    if (!isAuthorised(2)) {
+        throw new Exception("You are not authorised for this operation!", 401);
+    }
     $label = $tag['label'];
     $color = $tag['colorcode'];
     if(queryRow($conn, 'tag exists', 
@@ -784,4 +875,66 @@ function addTag(mysqli $conn, array $tag) {
     $lastInsertId = mysqli_insert_id($conn);
     $newTag = IdExists($conn, $lastInsertId, 'jc_tags');
     return $newTag;
+}
+
+function getTags(mysqli $conn) {
+    $results = mysqli_query($conn, "SELECT * FROM jc_tags;");
+    if (!$results) {
+        throw new Exception("Error getting tags");
+    }
+    $tags = array();
+    while ($row = mysqli_fetch_assoc($results)) {
+        $tags[] = $row;
+    }
+    return $tags;
+}
+
+function updateTag(mysqli $conn, array $tag) {
+    if (!isAuthorised(2)) {
+        throw new Exception("You are not authorised for this operation!", 401);
+    }
+    $id = $tag['id'];
+    // check if row with given id exists
+    if (!IdExists($conn, $id, 'jc_tags')) {
+        throw new Exception("tag with id: $id not found", 404);
+    }
+    // if id exists, perform update
+    $sql = 'UPDATE jc_tags SET `label` = ?, `colorcode` = ? WHERE id = ?;';
+    $stmt = mysqli_stmt_init($conn);
+    if(!mysqli_stmt_prepare($stmt, $sql)) {
+        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+    }
+    if (!mysqli_stmt_bind_param($stmt, 'ssi', $tag['label'], $tag['colorcode'], $id)) {
+        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
+    }
+    if(!mysqli_stmt_execute($stmt)) {
+        throw new Exception("Error executing update tag query: ". mysqli_stmt_error($stmt), 500);
+    }
+    mysqli_stmt_close($stmt);
+    $updatedTag = IdExists($conn, $id, 'jc_tags');
+    return $updatedTag;
+}
+
+function deleteTag(mysqli $conn, int $id) {
+    if (!isAuthorised(2)) {
+        throw new Exception("You are not authorised for this operation!", 401);
+    }
+    // check if row with given id exists
+    if (!IdExists($conn, $id, 'jc_tags')) {
+        throw new Exception("tag record with id: $id not found", 404);
+    }
+    // if id exists, perform deletion
+    $sql = 'DELETE FROM jc_tags WHERE id = ?;';
+    $stmt = mysqli_stmt_init($conn);
+    if(!mysqli_stmt_prepare($stmt, $sql)) {
+        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+    }
+    if (!mysqli_stmt_bind_param($stmt, 'i', $id)) {
+        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
+    }
+    if(!mysqli_stmt_execute($stmt)) {
+        throw new Exception("Error executing delete tag query:". mysqli_stmt_error($stmt), 500);
+    }
+    mysqli_stmt_close($stmt);
+    return true;
 }
