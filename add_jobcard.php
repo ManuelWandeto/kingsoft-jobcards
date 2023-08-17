@@ -13,11 +13,10 @@
       <div class="card-header">
         <h5 class="card-category" x-text="editMode ? moment(job.created_on).format('YYYY-MM-DD') : moment(Date.now()).format('YYYY-MM-DD')"></h5>
         <h4 class="card-title" x-text="editMode ? 'Edit Jobcard' : 'Add Jobcard'"></h4>
-
       </div>
       <div class="card-body">
         <form method="POST" enctype="multipart/form-data" 
-          x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
+        x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
           submitEdit(job.id, $event)
           document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
           editMode = false
@@ -25,6 +24,21 @@
           submit($event)
           document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
         }">
+        <template x-if="fields.tags.length">
+          <div class="job-tags">
+            <template x-for="tagId in fields.tags" :key="tagId">
+              <div x-data ="{tagData: $store.tags.getTag(tagId)}" :style="{borderColor: tagData.colorcode}">
+                <span x-text="tagData.label"></span>
+                <button type="button" class="icon-button" @click= "()=> {
+                  index = fields.tags.findIndex(t => t.id == tagData.id);
+                  fields.tags.splice(index, 1)
+                }">
+                  <i style="color: #dc3545;" class="now-ui-icons ui-1_simple-remove"></i>
+                </button>
+              </div>
+            </template>
+          </div>
+        </template>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 p-3">
             <div class="form-group pr-sm-2">
               <label for="project">Project</label>
@@ -284,6 +298,13 @@
               </template>
           </div>
           <div class="form-group action-group">
+            <button type="button" class="tags" data-toggle="modal" data-target="#tagsModal">
+              <i class="now-ui-icons shopping_tag-content"></i>
+              <span>Tags</span>
+            </button>
+            <!-- Tags Modal -->
+            <?php include_once('tags.php') ?>
+
             <template x-if="editMode">
              <button 
               class="icon-button" 

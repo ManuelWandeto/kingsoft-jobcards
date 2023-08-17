@@ -115,3 +115,24 @@ CREATE TABLE `jc_attachments` (
 );
 
 ALTER TABLE `jc_attachments` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE TABLE jc_tags (
+	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+	`label` varchar(255) UNIQUE NOT NULL,
+	`colorcode` VARCHAR(7) UNIQUE,
+	`updated_at` TIMESTAMP NOT NULL,
+	`created_at` TIMESTAMP NOT NULL
+);
+
+CREATE TABLE jc_jobcard_tags (
+	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+	`jobcard_id` MEDIUMINT NOT NULL,
+	`tag_id` MEDIUMINT NOT NULL,
+	`updated_at` TIMESTAMP NOT NULL,
+	`created_at` TIMESTAMP NOT NULL,
+	CONSTRAINT uc_jobcard_id_tag_id UNIQUE (jobcard_id, tag_id)
+);
+
+ALTER TABLE `jc_jobcard_tags` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `jc_jobcard_tags` ADD FOREIGN KEY (`tag_id`) REFERENCES `jc_tags`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
