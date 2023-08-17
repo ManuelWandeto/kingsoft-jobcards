@@ -2,7 +2,7 @@
   <div class="col">
     <div 
       class="card card-chart" 
-      x-data='{editMode: false, job: {}, selectedTags: [1,3]}' 
+      x-data='{editMode: false, job: {}}' 
       @edit-job.window="()=> {
         editMode=true,
         job = $event.detail
@@ -13,11 +13,10 @@
       <div class="card-header">
         <h5 class="card-category" x-text="editMode ? moment(job.created_on).format('YYYY-MM-DD') : moment(Date.now()).format('YYYY-MM-DD')"></h5>
         <h4 class="card-title" x-text="editMode ? 'Edit Jobcard' : 'Add Jobcard'"></h4>
-
       </div>
       <div class="card-body">
         <form method="POST" enctype="multipart/form-data" 
-          x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
+        x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
           submitEdit(job.id, $event)
           document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
           editMode = false
@@ -25,6 +24,21 @@
           submit($event)
           document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
         }">
+        <template x-if="fields.tags.length">
+          <div class="job-tags">
+            <template x-for="tagId in fields.tags" :key="tagId">
+              <div x-data ="{tagData: $store.tags.getTag(tagId)}" :style="{borderColor: tagData.colorcode}">
+                <span x-text="tagData.label"></span>
+                <button type="button" class="icon-button" @click= "()=> {
+                  index = fields.tags.findIndex(t => t.id == tagData.id);
+                  fields.tags.splice(index, 1)
+                }">
+                  <i style="color: #dc3545;" class="now-ui-icons ui-1_simple-remove"></i>
+                </button>
+              </div>
+            </template>
+          </div>
+        </template>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 p-3">
             <div class="form-group pr-sm-2">
               <label for="project">Project</label>
@@ -289,106 +303,7 @@
               <span>Tags</span>
             </button>
             <!-- Tags Modal -->
-            <div class="modal fade" id="tagsModal" tabindex="-1" data-backdrop="static" role="dialog" aria-labelledby="tagsModalLabel" aria-hidden="true">
-              <div class="modal-dialog" role="document" 
-                x-data = "{editMode: false, addMode: false, form: tagFormData()}"
-                @edit-tag.window = "()=> {
-                  editMode = true;
-                  form.editTag($event.detail)
-                }"
-                @add-tag.window = "()=> {
-                  addMode = true;
-                  form.editTag($event.detail)
-                }">
-                <div class="modal-content">
-                  <div class="modal-header d-flex justify-content-between align-items-center">
-                    <button x-show="addMode || editMode" x-transition type="button" 
-                      class="back icon-button" aria-label="Back"
-                      @click="()=> {
-                        editMode = false;
-                        addMode = false;
-                      }">
-                      <i class="now-ui-icons arrows-1_minimal-left"></i>
-                    </button>
-                    <h5 class="modal-title" id="tagsModalLabel" 
-                      x-text="editMode ? 'Edit Tag' : addMode ? 'Create Tag' : 'Job Tags'"></h5>
-                    <button type="button" class="close icon-button" data-dismiss="modal" aria-label="Close">
-                      <i class="now-ui-icons ui-1_simple-remove"></i>
-                    </button>
-                  </div>
-                  <div class="tag-preview" x-show="addMode || editMode" x-transition>
-                      <div class="color-label" :style="{backgroundColor: form.fields.colorcode.value}">
-                        <span class="label" x-text="form.fields.label.value"></span>  
-                      </div>
-                  </div>
-                  <div class="modal-body" x-data="{tags: [
-                    {id: 1, label: 'ETR', colorcode: '#51355A'},
-                    {id: 2, label: 'Installation', colorcode: '#2274A5'},
-                    {id: 3, label: 'Stocks', colorcode: '#EEA243'},
-                    {id: 4, label: 'Bills', colorcode: '#533B4D'},
-                    ]}">
-                    <div class="form-group mb-4" x-show="!addMode && !editMode">
-                      <input type="text" class="form-control" placeholder="Search tags">
-                    </div>
-
-                    <div x-show="editMode || addMode">
-                      <div class="form-group">
-                        <label for="tag-label">Label</label>
-                        <input type="text" class="form-control" 
-                          x-model="form.fields.label.value" id="tag-label" placeholder="Label"
-                          @blur="form.validateField(form.fields.label)">
-                        <span class="text-danger" x-text="form.fields.label.error"><span>
-                      </div>
-                      <div class="form-group">
-                        <label for="tag-color">Color Code</label>
-                        <input type="color" class="form-control py-1" id="tag-color" 
-                          x-model="form.fields.colorcode.value"
-                          @blur="form.validateField(form.fields.colorcode)">
-                        <span class="text-danger" x-text="form.fields.colorcode.error"><span>
-                      </div>
-                    </div>
-                    <template x-if="tags?.length && !addMode && !editMode">
-                      <div class="tags">
-                        <template x-for="tag in tags" :key="tag.id">
-                          <div class="form-check pl-0">
-                            <label class="form-check-label" >
-                              <input class="form-check-input" type="checkbox" x-model="selectedTags" :value="tag.id" :id="$id('tag', tag.id)" :checked="selectedTags.includes(tag.id)">
-                              <span class="form-check-sign">
-                                <span class="check"></span>
-                              </span>
-                              <div class="color-label" :style="{backgroundColor: tag.colorcode}">
-                                <span class="label" x-text="tag.label"></span>  
-                              </div>
-                              <button type="button" class="icon-button" @click="$dispatch('edit-tag', tag)">
-                                <i class="now-ui-icons ui-2_settings-90"></i>
-                              </button>
-                            </label>
-                          </div>
-                        </template>
-                      </div>
-                    </template>
-                  </div>
-                  <div class="modal-footer" x-show="editMode" >
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Save</button>
-                    <button type="button" class="btn btn-primary">Delete</button>
-                  </div>
-                  <div class="modal-footer" x-show="addMode" >
-                    <button type="button" class="btn btn-secondary w-100"
-                    :disabled = "(addMode) && form.isFormInvalid"
-                    @click="()=> {
-                      form.submit().then(() => addMode = false)
-                    }">Create</button>
-                  </div>
-                  <div class="modal-footer" x-show="!addMode && !editMode" >
-                    <button type="button" class="btn btn-secondary w-100" 
-                      @click="$dispatch('add-tag', {label: '', colorcode: '#4C6B1F'})"
-                    >
-                      Create New Tag
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <?php include_once('tags.php') ?>
 
             <template x-if="editMode">
              <button 
