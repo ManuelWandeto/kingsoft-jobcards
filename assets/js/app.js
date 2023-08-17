@@ -55,11 +55,13 @@ function formdata() {
                 value: null, error: null,
                 rules: ["minLength:10"]
             },
-            files: []
+            files: [],
+            tags: []
         },
         editJob({id, project, client_id, location, description, priority, status, assigned_to, supervised_by, start_date, end_date, completion_notes, issues_arrising}) {
             this.clearForm()
             clearFormErrors(this.fields)
+            const job = Alpine.store('jobs').jobs.find(j => j.id == id)
             this.fields.location.value = location
             this.fields.client.value = client_id
             this.fields.client.input = Alpine.store("clients").getClient(client_id).name
@@ -73,9 +75,10 @@ function formdata() {
             this.fields.endDate.value = moment(end_date).format(timestampFormatString)
             this.fields.completion_notes.value = completion_notes?.trim()
             this.fields.issues_arrising.value = issues_arrising?.trim()
-            this.fields.files = Alpine.store('jobs').jobs.find(j => j.id == id).files
-            this.isFormValid()
+            this.fields.files = job.files ?? []
+            this.fields.tags = job.tags ?? []
 
+            this.isFormValid()
         },
         isFormInvalid: true,
         validateField(field) {
@@ -113,6 +116,7 @@ function formdata() {
             // TODO: clear selected files if any
             document.querySelector('input#files').files = new DataTransfer().files
             this.fields.files = []
+            this.fields.tags = []
             this.isFormValid()
         },
         submit(e) {
@@ -126,6 +130,7 @@ function formdata() {
             formData.set('client_id', this.fields.client.value)
             formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
             formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
+            formData.set('tags[]', this.fields.tags)
 
             const config = {
                 withCredentials: true,
@@ -168,6 +173,8 @@ function formdata() {
             formData.set('client_id', this.fields.client.value)
             formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
             formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
+            formData.set('tags[]', this.fields.tags)
+
 
             const config = {
                 withCredentials: true,
@@ -477,69 +484,85 @@ function tagFormData() {
                 return
             }
             Alpine.store('tags').isLoaded = false
-
-            axios.post('includes/add_tag.inc.php', {
-                label: this.fields.label.value,
-                colorcode: this.fields.colorcode.value
-            }, {
-                withCredentials: true,
-            })
-                .then(res => {
-                    newTag = res.data
-                    Alpine.store('tags').isLoaded = true
-                    Alpine.store('tags').addTag(newTag)
-                    showAlert('alert-success', 'Success!', 'Successfully added tag')
+            try {
+                const res = await axios.post('includes/add_tag.inc.php', {
+                    label: this.fields.label.value,
+                    colorcode: this.fields.colorcode.value
+                }, {
+                    withCredentials: true,
                 })
-                .catch(e => {
-                    Alpine.store('tags').isLoaded = true
-                    showAlert('alert-danger', 'Error occured', `Error adding tag: ${e.response.data}`, 3500)
-                })
-            
-            this.clearForm()
-            return
+                newTag = res.data
+                Alpine.store('tags').isLoaded = true
+                Alpine.store('tags').addTag(newTag)
+                showAlert('alert-success', 'Success!', 'Successfully added tag')
+                
+            } catch (error) {
+                Alpine.store('tags').isLoaded = true
+                showAlert('alert-danger', 'Error occured', `Error adding tag: ${error.response.data}`, 3500)
+            } finally {
+                this.clearForm()
+                return
+            }
         },
-        // submitEdit(clientId, fields = {
-        //     name: this.fields.name.value,
-        //     email: this.fields.email.value,
-        //     location: this.fields.location.value,
-        //     phone: this.fields.phone.value,
-        // }) {
-        //     var ok = this.isFormValid();
-        //     if( ! ok ) {
-        //         return
-        //     }
-        //     Alpine.store('clients').isLoaded = false
-        //     fetch("includes/update_client.inc.php", {
-        //         method: "POST",
-        //         mode: "same-origin",
-        //         credentials: "same-origin",
-        //         body: JSON.stringify({
-        //             id: clientId,
-        //             ...fields
-        //         }),
-        //         headers: {
-        //           "Content-Type": "application/json; charset=UTF-8",
-        //           "Accept": "application/json"
-        //         }
-        //       })
-        //         .then(async (response) => {
-        //             if(!response.ok) {
-        //                 let errorMsg = await response.text()
-        //                 throw new Error(errorMsg)
-        //             }
-        //             return response.json();
-        //         })
-        //         .then((updatedClient) => {
-        //             Alpine.store('clients').isLoaded = true
-        //             Alpine.store('clients').editClient(updatedClient.id, updatedClient)
-        //             showAlert('alert-success', 'Success!', 'Successfully updated client')
-        //         })
-        //         .catch(e => {
-        //             Alpine.store('clients').isLoaded = true
-        //             showAlert('alert-danger', 'Error occured', `Error updating client: ${e}`, 3500)
-        //         })
-        //     this.clearForm()
-        // }
+        async submitEdit(tagId) {
+            var ok = this.isFormValid();
+            if( ! ok ) {
+                return
+            }
+            Alpine.store('tags').isLoaded = false
+            try {
+                const res = await axios.post("includes/update_tag.inc.php", {
+                    id: tagId,
+                    label: this.fields.label.value,
+                    colorcode: this.fields.colorcode.value
+                }, {
+                    withCredentials: true,
+                })
+                const updatedTag = res.data
+                Alpine.store('tags').editTag(updatedTag.id, updatedTag)
+                Alpine.store('tags').isLoaded = true
+                showAlert('alert-success', 'Success!', 'Successfully updated tag')
+            } catch (error) {
+                Alpine.store('tags').isLoaded = true
+                showAlert('alert-danger', 'Error occured', `Error updating tag: ${e.response.data}`, 3500)
+            } finally {
+                this.clearForm()
+                return
+            }
+        },
+        async deleteTag(tagId) {
+            Alpine.store('tags').isLoaded = false
+            try {
+                const res = await axios.post(`includes/delete_tag.inc.php?id=${tagId}`)
+                const ok = res.data
+                Alpine.store('tags').isLoaded = true
+                if (!ok) {
+                    throw new Error("Uncaught error occured deleting tag")
+                }
+                Alpine.store('tags').deleteTag(tagId)
+                // find jobs that the tag, 
+                let associatedJobs = Alpine.store('jobs').jobs.filter(j => j.tags?.includes((tagId).toString()))
+                if (associatedJobs?.length) {
+                    for (let i = 0; i < associatedJobs.length; i++) {
+                        let tagIndex = associatedJobs[i].tags.findIndex(t => t == (tagId).toString())
+                        if(tagIndex !== -1) {
+                            associatedJobs[i].tags.splice(tagIndex, 1)
+                        }
+                    }
+                    showAlert('alert-success', 'Success!', 'Successfully deleted tag and removed it from associated jobs')
+                    return
+                }
+                // delete the tag from their tags array property
+                showAlert('alert-success', 'Success!', 'Successfully deleted tag')
+                
+            } catch (error) {
+                Alpine.store('tags').isLoaded = true
+                showAlert('alert-danger', 'Error occured', `Error deleting tag: ${e.response?.data ?? e}`, 3500)
+            } finally {
+                this.clearForm()
+                return
+            }
+        }
     }
 }
 function editUserForm() {
@@ -1000,5 +1023,17 @@ document.addEventListener('alpine:init', () => {
             index = this.list.findIndex(t => t.id == tagId);
             this.list.splice(index, 1)
         }
+    })
+    axios.get("includes/get_tags.inc.php").then(res => {
+        const tags = res.data
+        Alpine.store('tags').list = tags;
+        Alpine.store('tags').isLoaded = true;
+        if(!tags?.length) {
+            illustrateError('tags-error-message', './assets/img/no_data.svg', 'Currently no tags, start adding some')
+        }
+    }).catch(e => {
+        Alpine.store('tags').isLoaded = true;
+        illustrateError("tags-error-message", './assets/img/server_error.svg', `Internal error occured`)
+        window.dispatchEvent(new CustomEvent('tags-error', {detail: e.response.data} ))
     })
 })
