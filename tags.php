@@ -18,6 +18,9 @@
                     <h5 class="modal-title" :class="deleteMode && 'text-danger'" id="tagsModalLabel" 
                       x-text="editMode ? 'Edit Tag' : addMode ? 'Create Tag' : deleteMode ? 'Confirm Delete' : 'Job Tags'">
                     </h5>
+                    <template x-data x-if="!$store.tags.isLoaded">
+                        <i class="ml-2 now-ui-icons loader_refresh spin"></i>
+                    </template>
                     <button type="button" class="close icon-button" data-dismiss="modal" aria-label="Close"
                       @click = "()=> {
                         form.clearForm()
@@ -101,8 +104,9 @@
                       validateField(form.fields.colorcode)
 
                       if (form.isFormValid()) {
-                        form.submitEdit(tagData.id);
-                        editMode = false;
+                        form.submitEdit(tagData.id).then(()=> {
+                          editMode = false;
+                        })
                       }
                     }">Save</button>
                     <button type="button" class="btn btn-danger" @click="()=> {
@@ -136,7 +140,7 @@
                       @click="()=> {
                         form.deleteTag(tagData.id).then(() => {
                             deleteMode = false;
-                            
+
                             <!-- fields from add_jobcard form -->
                             index = fields.tags.findIndex(t => t.id == tagData.id);
                             if(index) {
