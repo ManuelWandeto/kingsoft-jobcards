@@ -176,6 +176,9 @@
                             Files
                         </th>
                         <th>
+                            Tags
+                        </th>
+                        <th>
                             Completion notes
                         </th>
                         <th>
@@ -214,7 +217,7 @@
                                 </td>
                                 <td x-text="job.status" :class="job.status.toLowerCase()"></td>
                                 <td>
-                                    <template x-if="job.files && job.files?.length">
+                                    <template x-if="job.files?.length">
                                         <div x-id="['attachments']">
                                             <button type="button" class="btn btn-info" data-toggle="modal"
                                                 :data-target="'#'+$id('attachments', job.id)">
@@ -253,6 +256,48 @@
                                                                         </div>
                                                                     </template>
                                                                 </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary"
+                                                                data-dismiss="modal">Close</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- End Of Modal -->
+                                        </div>
+                                    </template>
+                                </td>
+                                <td>
+                                    <template x-if="job.tags?.length">
+                                        <div x-id="['tag']">
+                                            <button type="button" class="btn btn-info" data-toggle="modal"
+                                                :data-target="'#'+$id('tag', job.id)">
+                                                <i class="now-ui-icons shopping_tag-content" style="transform: rotate(-90deg);"></i>
+                                            </button>
+        
+                                            <!-- Modal -->
+                                            <div class="modal fade" :id="$id('tag', job.id)" tabindex="-1"
+                                                role="dialog" aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Job Tags</h5>
+                                                            <button type="button" class="close" data-dismiss="modal"
+                                                                aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="job-tags">
+                                                                <template x-for="tagId in job.tags" :key="tagId">
+                                                                    <div x-data ="{tagData: $store.tags.getTag(tagId)}" 
+                                                                        :style="{borderColor: tagData.colorcode}"
+                                                                    >
+                                                                        <span x-text="tagData.label"></span>
+                                                                    </div>
+                                                                </template>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
