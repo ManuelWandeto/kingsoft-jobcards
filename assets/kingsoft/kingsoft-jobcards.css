@@ -159,6 +159,10 @@ div.selected-files div.file-info span.size {
     font-weight: 600;
 }
 
+form div.action-group div.tags {
+    max-height: 300px;
+    overflow-y: auto;
+}
 form div.action-group button.tags {
     display: flex;
     gap: 8px;
@@ -223,6 +227,46 @@ form div.action-group button.tags i {
     transform: rotate(-90deg);
 }
 
+form div.job-tags {
+    overflow: auto;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+form div.job-tags::-webkit-scrollbar {
+    display: none;
+}
+
+td div.job-tags {
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+td div.job-tags,
+form div.job-tags {
+    display: flex;
+    gap: 14px;
+    overflow-y: auto;
+    flex-wrap: wrap;
+}
+
+td div.job-tags > div,
+form div.job-tags > div {
+    flex-shrink: 0;
+    font-family: 'Montserrat';
+    border: 2px solid #339DE8;
+    font-size: .875rem;
+    display: flex;
+    align-items: center;
+    border-radius: 12px;
+}
+td div.job-tags > div {
+    padding: 4px 12px;
+}
+form div.job-tags > div {
+    padding: 4px 6px 4px 12px;
+    gap: 8px;
+    justify-content: space-between;
+}
 
 div.card table.persons-list thead tr th,
 div.card table.alltime-jobs thead tr th {
