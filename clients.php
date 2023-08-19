@@ -34,7 +34,7 @@
             </template>
         </div>
         <div class="card-body pt-0">
-            <div x-data x-show="!editMode && !showForm && !($store.clients.list.length > 0)" x-transition.opacity id="clients-error-message" class="error-message">
+            <div x-data x-show="!editMode && !showForm && !($store.clients.list.length > 0)" x-cloak x-transition.opacity id="clients-error-message" class="error-message">
                 <img src="" alt="" class="error-illustration">
                 <span class="error-description"></span>
             </div>
@@ -49,7 +49,7 @@
                     showForm = false
                 }" 
             >
-                <div class="form-content" x-show="showForm || editMode" x-transition.scale>
+                <div class="form-content" x-show="showForm || editMode" x-cloak x-transition.scale>
                     <div class="form-group" >
                         <label for="new-client-name">Client name</label>
                         <input

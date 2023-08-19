@@ -47,6 +47,7 @@
                     role = ''
                 }"
                 x-show ="editMode" 
+                x-cloak
                 @clear-role.window="role = ''"
                 @edit-role.window = "()=> {
                     userdata = $event.detail
@@ -71,7 +72,7 @@
                     Submit
                 </button>
             </form>
-            <form x-data="addUserForm()" @clear-add.window="clearForm()" x-show="addMode" x-transition.scale @submit.prevent="()=> {
+            <form x-data="addUserForm()" @clear-add.window="clearForm()" x-show="addMode" x-cloak x-transition.scale @submit.prevent="()=> {
                 submit()
                 clearForm()
                 addMode = false
