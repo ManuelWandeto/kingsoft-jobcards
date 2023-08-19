@@ -27,10 +27,10 @@
         <template x-if="fields.tags.length">
           <div class="job-tags">
             <template x-for="tagId in fields.tags" :key="tagId">
-              <div x-data ="{tagData: $store.tags.getTag(tagId)}" :style="{borderColor: tagData.colorcode}">
+              <div x-data="{tagData: $store.tags.getTag(tagId)}" :style="{borderColor: tagData.colorcode}">
                 <span x-text="tagData.label"></span>
                 <button type="button" class="icon-button" @click= "()=> {
-                  index = fields.tags.findIndex(t => t.id == tagData.id);
+                  index = fields.tags.findIndex(t => t == tagId);
                   fields.tags.splice(index, 1)
                 }">
                   <i style="color: #dc3545;" class="now-ui-icons ui-1_simple-remove"></i>
@@ -39,7 +39,7 @@
             </template>
           </div>
         </template>
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 p-3">
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 px-3 py-2">
             <div class="form-group pr-sm-2">
               <label for="project">Project</label>
               <input 
@@ -146,7 +146,7 @@
             </textarea>
             <span class="text-danger" x-text="fields.description.error" x-cloak></span>
           </div>
-          <div class="row p-3">
+          <div class="row px-3 py-2">
             <div class="form-group col-sm-6 col-xl-3 p-0 pr-sm-2 pr-md-0">
               <label for="location" >Location</label>
               <input 
@@ -185,15 +185,16 @@
               </select>
             </div>
             <div class="form-group col-sm p-0">
-              <label for="duration">
-                <span x-show="!fields.startDate.value && !fields.endDate.value">Duration: </span> 
-                <span x-show="fields.startDate.value || fields.endDate.value">
-                  From: 
+              <div class="labels mb-1">
+                <label for="startDate" >
+                  <strong>From: </strong>
                   <span x-text="moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
+                </label>
+                <label for="endDate">
                   <strong>To:</strong> 
                   <span x-text="fields.endDate.value && moment(fields.endDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
-                </span>
-              </label>
+                </label>
+              </div>
               <div class="custom-datepicker" id="duration">
                 <input 
                   type="datetime-local" 
