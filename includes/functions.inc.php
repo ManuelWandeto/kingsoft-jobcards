@@ -113,7 +113,7 @@ function signUpUser(mysqli $conn, array $user) {
     if(uidExists($conn, $user["username"], $user["username"])) {
         throw new Exception("This user already exists!", 400);
     }
-    $sql = 'INSERT INTO jc_users (username, email, role, password, created_at) VALUES (?, ?, ?, ?, null);';
+    $sql = 'INSERT INTO jc_users (username, email, role, password) VALUES (?, ?, ?, ?);';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
@@ -145,7 +145,7 @@ function addClient(mysqli $conn, array $client) {
     if ($clientExists) {
         throw new Exception("client with name $clientName already exists", 400);
     }
-    $sql = 'INSERT INTO jc_clients (`name`, email, `phone`, `location`, created_at) VALUES (?, ?, ?, ?, null);';
+    $sql = 'INSERT INTO jc_clients (`name`, email, `phone`, `location`) VALUES (?, ?, ?, ?);';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
@@ -455,10 +455,9 @@ function addJob(mysqli $conn, array $jobData) {
                     `start_date`, 
                     `end_date`, 
                     completion_notes, 
-                    issues_arrising,
-                    created_at
+                    issues_arrising
                 ) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, null);';
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
@@ -483,7 +482,7 @@ function addJob(mysqli $conn, array $jobData) {
         throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
     }
     if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing insert client query: ".mysqli_stmt_error($stmt), 500);
+        throw new Exception("Error executing insert job query: ".mysqli_stmt_error($stmt), 500);
     }
     mysqli_stmt_close($stmt);
     $lastInsertId = mysqli_insert_id($conn);
@@ -505,7 +504,8 @@ function addJob(mysqli $conn, array $jobData) {
         }
         mysqli_stmt_close($stmt);
     }
-    $tags = array_map('intval', explode(',', $jobData['tags'][0]));
+    $tags = $jobData['tags'][0] ? array_map('intval', explode(',', $jobData['tags'][0])) : [];
+
     if ($tags) {
         $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?)';
         $stmt = mysqli_stmt_init($conn);
@@ -538,8 +538,8 @@ function addJob(mysqli $conn, array $jobData) {
             j.end_date,
             j.completion_notes,
             j.issues_arrising,
-            GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
-            GROUP_CONCAT(t.tag_id) as tags,
+            GROUP_CONCAT(DISTINCT a.file_path) as files,
+            GROUP_CONCAT(DISTINCT t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
         LEFT JOIN jc_attachments as a
@@ -562,12 +562,15 @@ function addJob(mysqli $conn, array $jobData) {
         $newJob['files'] = $files;
     }
     if($newJob['tags']) {
-        $tagsArray = explode(',', $newJob['tags']);
+        $tagIdsArray = array_map('intval', explode(',', $newJob['tags']));
+        $tagsArray = [];
+        for ($i=0; $i < count($tagIdsArray); $i++) { 
+            $tagsArray[] = getTagInfo($conn, $tagIdsArray[$i]);
+        }
         $newJob['tags'] = $tagsArray;
     }
     return $newJob;
 }
-
 function getJobs(mysqli $conn) {
     // run update_jobcard_statuses() stored procedure
     if(!mysqli_query($conn, 'CALL update_jobcard_statuses();')) {
@@ -591,8 +594,8 @@ function getJobs(mysqli $conn) {
             j.end_date,
             j.completion_notes,
             j.issues_arrising,
-            GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
-            GROUP_CONCAT(t.tag_id) as tags,
+            GROUP_CONCAT(DISTINCT a.file_path) as files,
+            GROUP_CONCAT(DISTINCT t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
         LEFT JOIN jc_attachments as a
@@ -628,11 +631,16 @@ function getJobs(mysqli $conn) {
             $row['files'] = $files;
         }
         if($row['tags']) {
-            $tagsArray = explode(',', $row['tags']);
+            $tagIdsArray = array_map('intval', explode(',', $row['tags']));
+            $tagsArray = [];
+            for ($i=0; $i < count($tagIdsArray); $i++) { 
+                $tagsArray[] = getTagInfo($conn, $tagIdsArray[$i]);
+            }
             $row['tags'] = $tagsArray;
         }
         $jobs[] = $row;
     }
+
     return $jobs;
 }
 
@@ -717,12 +725,13 @@ function updateJob(mysqli $conn, array $job) {
         'i',
         $id
     );
-    $oldTags = array_map('intval', explode(',', $oldTagsRecord['tags']));
 
-    $newTags = array_map('intval', explode(',', $job['tags'][0])) ?? [];
-    
+    $oldTags = $oldTagsRecord['tags'] ? array_map('intval', explode(',', $oldTagsRecord['tags'])) : [];
+
+    $newTags = $job['tags'][0] ? array_map('intval', explode(',', $job['tags'][0])) : [];
     // Get old tags not included in the new and remove them
     $removedTags = array_values(array_diff($oldTags, $newTags));
+
     if($removedTags) {
         $sql = 'DELETE FROM jc_jobcard_tags WHERE jobcard_id = ? AND tag_id = ?;';
         $stmt = mysqli_stmt_init($conn);
@@ -742,6 +751,7 @@ function updateJob(mysqli $conn, array $job) {
     }
     // get new tags not already in the old and add them
     $tags = array_values(array_diff($newTags, $oldTags));
+    
     if ($tags) {
         $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?);';
         $stmt = mysqli_stmt_init($conn);
@@ -774,8 +784,8 @@ function updateJob(mysqli $conn, array $job) {
             j.end_date,
             j.completion_notes,
             j.issues_arrising,
-            GROUP_CONCAT(a.file_path SEPARATOR ',') as files,
-            GROUP_CONCAT(t.tag_id) as tags,
+            GROUP_CONCAT(DISTINCT a.file_path) as files,
+            GROUP_CONCAT(DISTINCT t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
         LEFT JOIN jc_attachments as a
@@ -798,7 +808,11 @@ function updateJob(mysqli $conn, array $job) {
         $updatedJob['files'] = $files;
     }
     if($updatedJob['tags']) {
-        $tagsArray = explode(',', $updatedJob['tags']);
+        $tagIdsArray = array_map('intval', explode(',', $updatedJob['tags']));
+        $tagsArray = [];
+        for ($i=0; $i < count($tagIdsArray); $i++) { 
+            $tagsArray[] = getTagInfo($conn, $tagIdsArray[$i]);
+        }
         $updatedJob['tags'] = $tagsArray;
     }
     return $updatedJob;
@@ -851,10 +865,9 @@ function addTag(mysqli $conn, array $tag) {
     $sql = 'INSERT INTO jc_tags 
                 (
                     `label`, 
-                    colorcode, 
-                    created_at
+                    colorcode
                 ) 
-            VALUES (?, ?, null);';
+            VALUES (?, ?);';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
@@ -876,7 +889,15 @@ function addTag(mysqli $conn, array $tag) {
     $newTag = IdExists($conn, $lastInsertId, 'jc_tags');
     return $newTag;
 }
-
+function getTagInfo($conn, int $id) {
+    return queryRow(
+        $conn, 
+        'get tag by Id', 
+        "SELECT * FROM jc_tags WHERE id = ?;",
+        'i',
+        $id
+    );
+}
 function getTags(mysqli $conn) {
     $results = mysqli_query($conn, "SELECT * FROM jc_tags;");
     if (!$results) {
