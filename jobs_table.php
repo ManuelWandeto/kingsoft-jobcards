@@ -1,7 +1,7 @@
 <div class="row">
   <div class="col-md-12">
     <div class="card jobs-card" id="jobs-table">
-        <div class="card-header" style="display: flex; align-items: center; gap: 12px">
+        <div class="card-header">
             <h4 class="card-title"> All Jobs </h4>
             <template x-data x-if="!$store.jobs.isLoaded">
                 <i class="now-ui-icons loader_refresh spin"></i>
@@ -291,11 +291,11 @@
                                                         </div>
                                                         <div class="modal-body">
                                                             <div class="job-tags">
-                                                                <template x-for="tagId in job.tags" :key="tagId">
-                                                                    <div x-data ="{tagData: $store.tags.getTag(tagId)}" 
-                                                                        :style="{borderColor: tagData.colorcode}"
+                                                                <template x-for="tag in job.tags" :key="tag.id">
+                                                                    <div  
+                                                                        :style="{borderColor: tag.colorcode}"
                                                                     >
-                                                                        <span x-text="tagData.label"></span>
+                                                                        <span x-text="tag.label"></span>
                                                                     </div>
                                                                 </template>
                                                             </div>
