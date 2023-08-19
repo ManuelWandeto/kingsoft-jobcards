@@ -11,6 +11,7 @@
     display: flex;
     gap: 12px;
     align-items: center;
+    transition: all .3s ease-out;
 }
 .card form div.form-group.action-group button.btn-fab {
     background-color: #339DE8;
@@ -34,10 +35,22 @@
     border: 1px solid #E3E3E3;
     border-radius: 12px;
 }
-
-div.card form label {
-    color: #7a7979 !important;
+div.form-group div.labels label {
+    display: inline-block;
+    padding: 4px 0;
+    font-size: .875rem;
+    font-family: 'Montserrat';
 }
+div.form-group div.labels label:first-child {
+    margin-right: 12px;
+}
+div.form-group div.labels label span {
+    margin-left: 6px;
+}
+div.card form label {
+    color: #6e6e6e !important;
+}
+
 div.card form input, div.card form select  {
     box-sizing: border-box;
     height: 40px;
@@ -278,14 +291,31 @@ div.card table.alltime-jobs thead tr th {
     position: sticky;
     top: 0;
 }
-
+div#jobs-table div.card-header {
+    display: flex; 
+    align-items: center; 
+    gap: 12px
+}
 div.card table.persons-list thead tr th,
 div.card table.alltime-jobs thead tr th,
 div.card table.alltime-jobs tbody tr td {
     border: 1px solid #E3E3E3;
 }
+div.card table.alltime-jobs tbody tr:nth-child(even) {
+    background-color: #EBEBEB;
+}
 div.card table.alltime-jobs tbody {
     border-bottom: 1px solid #E3E3E3;
+}
+table td div.job-actions button.icon-button:focus {
+    border: none;
+}
+table.persons-list tr {
+    height: 60px;
+}
+
+div.row > div div.jobs-card table.alltime-jobs{
+    transition: all .3s ease-out;
 }
 
 div.attachments {
@@ -318,6 +348,12 @@ div.attachments div.file-info i {
 div.attachments div.file-info .download i {
     color: #339DE8;
 }
+table.alltime-jobs td div.duration {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+}
 
 div.datetime {
     display: flex;
@@ -338,12 +374,6 @@ div.datetime span.time {
     opacity: 0.8;
 }
 
-table.alltime-jobs td div.duration {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    height: 100%;
-}
 
 html {
     width: 100%;
@@ -438,16 +468,6 @@ table td div.job-actions button.icon-button {
     outline: none;
 }
 
-table td div.job-actions button.icon-button:focus {
-    border: none;
-}
-table.persons-list tr {
-    height: 60px;
-}
-
-div.row > div div.jobs-card table.alltime-jobs{
-    transition: all .3s ease-out;
-}
 div.row > div div.jobs-card div.card-header div.filters {
     position: absolute; 
     top: 24px;
@@ -455,6 +475,7 @@ div.row > div div.jobs-card div.card-header div.filters {
     display: flex;
     gap: 12px;
     align-items: center;
+    transition: all .3s ease-out;
 }
 div.row > div div.jobs-card div.card-header div.filters div.search {
     position: relative;
@@ -565,6 +586,55 @@ div.page-options button.btn {
 
 div.page-options button.btn.show {
     background-color: #5E6973;
+}
+@media (max-width: 576px) {
+    div#jobs-table div.card-header,
+    div#jobcard-form div.card-header {
+        margin-bottom: 40px;
+    }
+
+    div#jobs-table div.card-header,
+    div#jobcard-form form div.action-group {
+        right: unset;
+        justify-content: space-between;
+        width: 92%;
+    }
+    div#jobcard-form form div.job-tags {
+        padding-top: 12px;
+    }
+    div#jobcard-form form div.action-group {
+        left: 16px;
+        top: 74px;
+    }
+
+    div#jobs-table div.card-header div.filters {
+        left: 12px;
+        top: 60px;
+        padding: 10px 0;
+    }
+    div#jobs-table div.card-header div.filters div.search.dropdown {
+        flex: 1
+    }
+    div.form-group {
+        margin-bottom: 16px;
+    }
+    form .form-group div.custom-datepicker {
+        flex-direction: column;
+        border-radius: 9px;
+    }
+    form .form-group div.custom-datepicker > input:first-child {
+        border-right: unset;
+        border-bottom: 1.4px solid #E3E3E3;
+    }
+    form .form-group div.custom-datepicker > input {
+        padding: 1rem;
+    }
+
+    div.form-group div.labels label {
+        display: block;
+        padding: 4px 0;
+    }
+
 }
 
 @media(min-width: 1200px) and (max-width: 1400px) {
