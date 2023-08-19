@@ -13,13 +13,13 @@ CREATE TABLE `jc_jobcards` (
   `status` ENUM('CANCELLED', 'SUSPENDED', 'REPORTED', 'SCHEDULED', 'ONGOING', 'COMPLETED', 'OVERDUE') NOT NULL,
   `completion_notes` TEXT,
   `issues_arrising` TEXT,
-  -- in mysql 5.1, the first timestamp column automatically becomes -- DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  `updated_at` TIMESTAMP NOT NULL,
-  -- in mysql 5.1, explicitly giving a timestamp column the value of 'null' is equivalent to giving it CURRENT_TIMESTAMP
-  `created_at` TIMESTAMP NOT NULL,
   `start_date` TIMESTAMP NOT NULL,
-  `end_date` TIMESTAMP NOT NULL
+  `end_date` TIMESTAMP NOT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+DROP TABLE `jc_jobcards`;
 
 CREATE TABLE `jc_users` (
   `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
@@ -30,8 +30,8 @@ CREATE TABLE `jc_users` (
   `role` ENUM('USER', 'EDITOR', 'ADMIN') NOT NULL,
   `current_location` varchar(255),
   `current_task` TEXT,
-  `updated_at` TIMESTAMP NOT NULL,
-  `created_at` TIMESTAMP NOT NULL
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE `jc_clients` (
@@ -40,8 +40,8 @@ CREATE TABLE `jc_clients` (
   `email` varchar(255),
   `phone` varchar(255),
   `location` varchar(255) NOT NULL,
-  `updated_at` TIMESTAMP NOT NULL,
-  `created_at` TIMESTAMP NOT NULL
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE `jc_jobcards` ADD FOREIGN KEY (`client_id`) REFERENCES `jc_clients`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -90,6 +90,36 @@ BEGIN
 END$$
 DELIMITER ;
 
+CREATE TABLE `jc_attachments` (
+	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+	`jobcard_id` MEDIUMINT NOT NULL,
+	`file_path` VARCHAR(255) NOT NULL,
+	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE `jc_attachments` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE TABLE jc_tags (
+	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+	`label` varchar(255) UNIQUE NOT NULL,
+	`colorcode` VARCHAR(7) UNIQUE,
+	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE jc_jobcard_tags (
+	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+	`jobcard_id` MEDIUMINT NOT NULL,
+	`tag_id` MEDIUMINT NOT NULL,
+	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT uc_jobcard_id_tag_id UNIQUE (jobcard_id, tag_id)
+);
+
+ALTER TABLE `jc_jobcard_tags` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `jc_jobcard_tags` ADD FOREIGN KEY (`tag_id`) REFERENCES `jc_tags`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
 DELIMITER $$
 CREATE PROCEDURE update_jobcard_statuses()
 BEGIN
@@ -106,33 +136,3 @@ BEGIN
 END$$
 
 DELIMITER ;
-
-CREATE TABLE `jc_attachments` (
-	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
-	`jobcard_id` MEDIUMINT NOT NULL,
-	`file_path` VARCHAR(255) NOT NULL,
-  `created_at` TIMESTAMP NOT NULL
-);
-
-ALTER TABLE `jc_attachments` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-CREATE TABLE jc_tags (
-	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
-	`label` varchar(255) UNIQUE NOT NULL,
-	`colorcode` VARCHAR(7) UNIQUE,
-	`updated_at` TIMESTAMP NOT NULL,
-	`created_at` TIMESTAMP NOT NULL
-);
-
-CREATE TABLE jc_jobcard_tags (
-	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
-	`jobcard_id` MEDIUMINT NOT NULL,
-	`tag_id` MEDIUMINT NOT NULL,
-	`updated_at` TIMESTAMP NOT NULL,
-	`created_at` TIMESTAMP NOT NULL,
-	CONSTRAINT uc_jobcard_id_tag_id UNIQUE (jobcard_id, tag_id)
-);
-
-ALTER TABLE `jc_jobcard_tags` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `jc_jobcard_tags` ADD FOREIGN KEY (`tag_id`) REFERENCES `jc_tags`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
