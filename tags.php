@@ -44,7 +44,7 @@
                   </div>
                   <div class="modal-body" x-show ="!deleteMode">
                     <div x-data 
-                      x-show="(error) || !($store.tags.list.length)" 
+                      x-show="(error) || !($store.tags.list.length) && !addMode" 
                       x-transition.opacity id="tags-error-message" class="error-message"style="height: unset;"
                     >
                         <img src="" alt="" class="error-illustration mr-2" style="height: 100px;">
@@ -78,7 +78,11 @@
                         <template x-for="tag in $store.tags.list.filter(t => t.label.toLowerCase().includes(search.toLowerCase()))" :key="tag.id">
                           <div class="form-check pl-0">
                             <label class="form-check-label" >
-                              <input class="form-check-input" type="checkbox" x-model="fields.tags" :value="tag.id" :id="$id('tag', tag.id)" :checked="fields.tags.includes(tag.id.toString())">
+                              <input class="form-check-input" type="checkbox" 
+                                :value = "tag.id"
+                                x-model="fields.tags"
+                                :checked="fields.tags.includes(tag.id)"
+                              >
                               <span class="form-check-sign">
                                 <span class="check"></span>
                               </span>
