@@ -39,7 +39,7 @@
             </template>
           </div>
         </template>
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 px-3 py-2">
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 px-3 py-1">
             <div class="form-group pr-sm-2">
               <label for="project">Project</label>
               <input 
@@ -133,6 +133,34 @@
               </select>
             </div>
           </div>
+          <div class="row py-1 px-3 row-cols-1 row-cols-sm-2">
+            <div class="form-group pr-sm-2">
+              <label for="reporter">Reported by</label>
+              <!-- Add disabled="editMode to reported_by" -->
+              <input 
+                name="reporter"
+                type="text" 
+                :disabled="editMode"
+                x-model="fields.reporter.value" 
+                x-on:blur="validateField(fields.reporter)" 
+                :class="fields.reporter.error ? 'border-danger' : ''"
+                id="reporter" class="form-control" 
+                placeholder="Enter name">
+              <span class="text-danger" x-text="fields.reporter.error" x-cloak></span>
+            </div>  
+            <div class="form-group">
+              <label for="reporter-contacts">Contacts</label>
+              <input 
+                name="reporter_contacts"
+                type="text" 
+                x-model="fields.reporterContacts.value" 
+                x-on:blur="validateField(fields.reporterContacts)" 
+                :class="fields.reporterContacts.error ? 'border-danger' : ''"
+                id="reporter-contacts" class="form-control" 
+                placeholder="Enter reporter's phone">
+              <span class="text-danger" x-text="fields.reporterContacts.error" x-cloak></span>
+            </div>  
+          </div>
           <div class="row px-3 form-group">
             <label for="description">Description</label>
             <textarea 
@@ -184,7 +212,7 @@
                 <option value="SUSPENDED">Suspended</option>
               </select>
             </div>
-            <div class="form-group col-sm p-0">
+            <div class="form-group duration col-sm p-0">
               <div class="labels">
                 <label for="startDate" >
                   <strong>From: </strong>
