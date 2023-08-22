@@ -73,7 +73,7 @@ function queryRow(
 ) {
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
+        throw new Exception("$queryName Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
     }
     if (!mysqli_stmt_bind_param($stmt, $paramTypes, ...$params)) {
         throw new Exception("Error binding parameters to $queryName: ".mysqli_stmt_error($stmt), 400);
@@ -84,7 +84,7 @@ function queryRow(
 
     $result = mysqli_stmt_get_result($stmt);
     if(!$result) {
-        throw new Exception("Error getting query results: ".mysqli_stmt_error($stmt), 500);
+        throw new Exception("Error getting $queryName results: ".mysqli_stmt_error($stmt), 500);
     }
     $record = mysqli_fetch_assoc($result);
     $result = false;
