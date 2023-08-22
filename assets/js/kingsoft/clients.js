@@ -13,16 +13,21 @@ function clientFormData() {
                 value: null, error: null,
                 rules: ["required", "minLength:3"]
             },
+            contactPerson: {
+                value: null, error: null,
+                rules: ["optional", "minLength:3", "maxLength:50"]
+            },
             phone: {
                 value: null, error: null,
                 rules: ["optional", "numeric"]
             }
         },
-        editClient({name, email, phone, location}) {
+        editClient({name, email, contact_person, phone, location}) {
             clearFormErrors(this.fields)
             this.fields.name.value = name
             this.fields.email.value = email
             this.fields.location.value = location
+            this.fields.contactPerson.value = contact_person
             this.fields.phone.value = phone
             this.isFormValid()
         },
@@ -43,6 +48,7 @@ function clientFormData() {
             this.fields.email.value = ""
             this.fields.location.value = ""
             this.fields.phone.value = ""
+            this.fields.contactPerson.value = ""
             clearFormErrors(this.fields)
             this.isFormValid()
         },
@@ -60,6 +66,7 @@ function clientFormData() {
                     name: this.fields.name.value,
                     email: this.fields.email.value,
                     location: this.fields.location.value,
+                    contact_person: this.fields.contactPerson.value,
                     phone: this.fields.phone.value
                 }),
                 headers: {
@@ -88,6 +95,7 @@ function clientFormData() {
         submitEdit(clientId, fields = {
             name: this.fields.name.value,
             email: this.fields.email.value,
+            contact_person: this.fields.contactPerson.value,
             location: this.fields.location.value,
             phone: this.fields.phone.value,
         }) {
