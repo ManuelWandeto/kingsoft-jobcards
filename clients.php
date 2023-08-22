@@ -89,6 +89,19 @@
                         />    
                         <span class="text-danger" x-text="fields.location.error" x-cloak></span>
                     </div>
+                    <div class="form-group" >
+                        <label for="contact-person">Contact person</label>
+                        <input
+                            type="text" 
+                            name="clientName"
+                            id="contact-person" class="form-control" 
+                            placeholder="Enter name" 
+                            x-model="fields.contactPerson.value"
+                            @blur="validateField(fields.contactPerson)"
+                            :class="fields.contactPerson.error ? 'border-danger' : ''"
+                        />    
+                        <span class="text-danger" x-text="fields.contactPerson.error" x-cloak></span>
+                    </div>
                     <div class="form-group">
                         <label for="phone">Phone</label>
                         <input
@@ -120,7 +133,8 @@
                             <tr>
                                 <th style="min-width: 150px;">Name</th>
                                 <th>Email</th>
-                                <th>Location</th>
+                                <th style="min-width: 150px;">Location</th>
+                                <th>Contact</th>
                                 <th>Phone</th>
                                 <template x-if="session.role !== 'USER'">
                                     <th>Actions</th>
@@ -131,9 +145,10 @@
                             <template x-for="client in $store.clients.list">
                                 <tr>
                                     <td class="text-left" x-text="client.name"></td>
-                                    <td class="text-left" x-text="client.email"></td>
+                                    <td class="text-left" x-text="client.email?.trim() || 'N/A'"></td>
                                     <td class="text-left" x-text="client.location"></td>
-                                    <td class="text-left" x-text="client.phone"></td>
+                                    <td class="text-left" x-text="client.contact_person?.trim() || 'N/A'"></td>
+                                    <td class="text-left" x-text="client.phone?.trim() || 'N/A'"></td>
                                     <template x-if="session.role !== 'USER'">
                                         <td class="td-actions text-right" x-id="['client-actions']">
                                             <button type="button" rel="tooltip" title=""
