@@ -146,7 +146,7 @@
             </textarea>
             <span class="text-danger" x-text="fields.description.error" x-cloak></span>
           </div>
-          <div class="row px-3 py-2">
+          <div class="row px-3 py-2 align-items-center">
             <div class="form-group col-sm-6 col-xl-3 p-0 pr-sm-2 pr-md-0">
               <label for="location" >Location</label>
               <input 
@@ -185,7 +185,7 @@
               </select>
             </div>
             <div class="form-group col-sm p-0">
-              <div class="labels mb-1">
+              <div class="labels">
                 <label for="startDate" >
                   <strong>From: </strong>
                   <span x-text="moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
