@@ -10,12 +10,20 @@ function addClient(mysqli $conn, array $client) {
     if ($clientExists) {
         throw new Exception("client with name $clientName already exists", 400);
     }
-    $sql = 'INSERT INTO jc_clients (`name`, email, `phone`, `location`) VALUES (?, ?, ?, ?);';
+    $sql = 'INSERT INTO jc_clients (`name`, email, `contact_person`, `phone`, `location`) VALUES (?, ?, ?, ?, ?);';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
     }
-    $boundOk = mysqli_stmt_bind_param($stmt, 'ssss', $clientName, $client['email'], $client['phone'], $client['location']);
+    $boundOk = mysqli_stmt_bind_param(
+        $stmt, 
+        'sssss', 
+        $clientName, 
+        $client['email'], 
+        $client['contact_person'], 
+        $client['phone'], 
+        $client['location']
+    );
     if(!$boundOk) {
         throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
     }
@@ -45,12 +53,21 @@ function updateClient(mysqli $conn, array $client) {
         throw new Exception("Client record with id: $id not found", 404);
     }
     // if id exists, perform update
-    $sql = 'UPDATE jc_clients SET `name` = ?, `email` = ?, `phone` = ?, `location` = ? WHERE id = ?;';
+    $sql = 'UPDATE jc_clients SET `name` = ?, `email` = ?, `contact_person` = ?, `phone` = ?, `location` = ? WHERE id = ?;';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
     }
-    if (!mysqli_stmt_bind_param($stmt, 'ssssi', $client['name'], $client['email'], $client['phone'], $client['location'], $id)) {
+    if (!mysqli_stmt_bind_param(
+        $stmt, 
+        'sssssi', 
+        $client['name'], 
+        $client['email'], 
+        $client['contact_person'], 
+        $client['phone'], 
+        $client['location'], 
+        $id
+    )) {
         throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
     }
     if(!mysqli_stmt_execute($stmt)) {
