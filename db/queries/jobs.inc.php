@@ -125,7 +125,7 @@ function addJob(mysqli $conn, array $jobData) {
         $files = [];
         $paths = explode(',', $newJob['files']);
         foreach ($paths as $path) {
-            $files[] = getFileInfo($path);
+            $files[] = getFileInfo(UPLOAD_PATH . $path);
         }
         $newJob['files'] = $files;
     }
@@ -186,11 +186,12 @@ function getJobs(mysqli $conn) {
             $files = [];
             $paths = explode(',', $row['files']);
             foreach ($paths as $path) {
+                $filepath = UPLOAD_PATH . $path;
                 try {
-                    $files[] = getFileInfo($path);
+                    $files[] = getFileInfo($filepath);
                 } catch (Exception $e) {
                     if($e->getCode() == 404) {
-                        deleteAttachment($conn, $path);
+                        deleteAttachment($conn, $filepath);
                         continue;
                     }
                     throw $e;
@@ -269,7 +270,7 @@ function updateJob(mysqli $conn, array $job) {
     mysqli_stmt_close($stmt);
     if ($filepaths) {
         // IF attachments have been uploaded, post them to the attachments table
-        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_path`) VALUES (?, ?)';
+        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_path`) VALUES (?, ?);';
         $stmt = mysqli_stmt_init($conn);
         if(!mysqli_stmt_prepare($stmt, $sql)) {
             throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
@@ -370,7 +371,7 @@ function updateJob(mysqli $conn, array $job) {
         $files = [];
         $paths = explode(',', $updatedJob['files']);
         foreach ($paths as $path) {
-            $files[] = getFileInfo($path);
+            $files[] = getFileInfo(UPLOAD_PATH . $path);
         }
         $updatedJob['files'] = $files;
     }
