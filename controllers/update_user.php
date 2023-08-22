@@ -1,10 +1,9 @@
 <?php
 
 require_once('../db/db.inc.php');
-require_once('../db/queries/utils.inc.php');
+require_once('../db/functions.inc.php');
 require_once('../db/queries/users.inc.php');
 require_once('../utils/redirect.php');
-// session_start();
 
 if(!isset($_POST["submit"]) || !isset($_SESSION['user_id'])) {
     redirect('../Login/brandlogin.php');
