@@ -1,7 +1,7 @@
 <?php 
 
-include_once('../utils/redirect.php');
-include_once('../includes/db.inc.php');
+require_once('../utils/redirect.php');
+require_once('../db/db.inc.php');
 
 if(!isset($_POST["submit"])) {
     echo "Unauthorised route";
@@ -11,7 +11,7 @@ if(!isset($_POST["submit"])) {
 $username = $_POST['username'];
 $pwd = $_POST['password'];
 
-include_once('../includes/functions.inc.php');
+require_once('../db/queries/utils.inc.php');
 
 $user = uidExists($conn, $username, $username);
 
