@@ -6,7 +6,7 @@
             <template x-data x-if="!$store.jobs.isLoaded">
                 <i class="now-ui-icons loader_refresh spin"></i>
             </template>
-            <template x-data x-cloak x-if="$store.jobs.jobs.length > 0">
+            <template x-data x-cloak x-if="$store.jobs.list.length > 0">
                 <div class="filters" x-data>
                     <div class="search dropdown">
                         <i class="now-ui-icons ui-1_zoom-bold"></i>
@@ -132,7 +132,7 @@
             </template>
         </div>
         <div class="card-body">
-            <div x-data x-show="!($store.jobs.jobs.length > 0)" id="jobs-error-message" class="error-message">
+            <div x-data x-show="!($store.jobs.list.length > 0)" id="jobs-error-message" class="error-message">
                 <img src="" alt="" class="error-illustration">
                 <span class="error-description"></span>
             </div>
