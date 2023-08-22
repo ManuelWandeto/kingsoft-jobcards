@@ -60,14 +60,17 @@ div.card form input::placeholder {
     font-size: .875rem;
 }
 
-.card form .form-group span.text-danger {
+.card form div.form-group.duration {
+    position: relative;
+}
+.card form div.form-group.duration span.text-danger {
     font-size: .75rem;
     position: absolute;
 }
-.card form .form-group span.text-danger:first-child {
+.card form div.form-group.duration span.text-danger:first-child {
     left: 16px;
 }
-.card form .form-group span.text-danger:last-child {
+.card form div.form-group.duration span.text-danger:last-child {
     right: 16px;
 }
 
@@ -641,7 +644,7 @@ div.page-options button.btn.show {
         display: block;
         padding: 4px 0;
     }
-    .card form .form-group span.text-danger {
+    .card form .form-group.duration span.text-danger {
         position: static;
     }
 
