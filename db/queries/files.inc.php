@@ -1,5 +1,8 @@
 <?php
 require_once('../../utils/constants.php');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 function uploadFiles() {
     if (!isset($_FILES['attachments']['name'])) {
         throw new Exception("attachments is not set", 500);
@@ -10,9 +13,14 @@ function uploadFiles() {
     if(!$total) {
         return false;
     }
+    if(!isset($_SESSION['user_id'])) {
+        throw new Exception("Cannot create or locate upload dir as user id is not set in session", 400);
+    }
+    $userdir = 'user_'. $_SESSION['user_id'] . '/';
+    $upload_dir = UPLOAD_PATH . $userdir;
+
     for ($i=0; $i < $total; $i++) { 
         if($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
-            $upload_dir = UPLOAD_PATH . 'user_'. $_SESSION['user_id'] . '/';
             if (!file_exists($upload_dir)) {
                 mkdir($upload_dir, 0777, true);
             }
@@ -31,9 +39,9 @@ function uploadFiles() {
             }
             if ($tempPath) {
                 if(move_uploaded_file($tempPath, $filepath)) {
-                    $paths[] = $filepath;
+                    $paths[] = $userdir . basename($filepath);
                 } else {
-                    return false;
+                    throw new Exception("error moving file to destination", 500);
                 }
             } else {
                 throw new Exception("error reading temp path of file", 500);
