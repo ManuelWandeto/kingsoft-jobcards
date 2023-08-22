@@ -6,6 +6,8 @@ CREATE TABLE `jc_jobcards` (
   `client_id` MEDIUMINT NOT NULL,
   -- mysql enum values are numbered from left to right starting with 1
   `priority` ENUM('LOW', 'MEDIUM', 'URGENT') NOT NULL,
+  `reported_by` VARCHAR(255),
+  `reporter_contacts` VARCHAR(255),
   `description` TEXT NOT NULL,
   `assigned_to` MEDIUMINT,
   `supervised_by` MEDIUMINT,
@@ -38,6 +40,7 @@ CREATE TABLE `jc_clients` (
   `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `email` varchar(255),
+  `contact_person` VARCHAR(255),
   `phone` varchar(255),
   `location` varchar(255) NOT NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
