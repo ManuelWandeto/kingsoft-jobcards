@@ -188,7 +188,7 @@
               <div class="labels">
                 <label for="startDate" >
                   <strong>From: </strong>
-                  <span x-text="moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
+                  <span x-text="fields.startDate.value && moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
                 </label>
                 <label for="endDate">
                   <strong>To:</strong> 
@@ -217,7 +217,7 @@
               <span class="text-danger" x-text="fields.endDate.error" x-cloak></span>
             </div>
           </div>
-          <div class="row px-3 row-cols-1 row-cols-md-2">
+          <div class="row px-3 mt-xl-1  row-cols-1 row-cols-md-2">
             <div class="form-group pr-md-3">
               <label for="on-completion-notes">Completion notes</label>
               <textarea name="completion_notes" class="form-control" id="on-completion-notes" rows="30" x-model="fields.completion_notes.value"></textarea>
