@@ -17,6 +17,8 @@ function addJob(mysqli $conn, array $jobData) {
                     `priority`,  
                     `assigned_to`, 
                     `supervised_by`, 
+                    `reported_by`,
+                    `reporter_contacts`,
                     `description`, 
                     `location`, 
                     `status`, 
@@ -25,19 +27,21 @@ function addJob(mysqli $conn, array $jobData) {
                     completion_notes, 
                     issues_arrising
                 ) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);';
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
     }
     $boundOk = mysqli_stmt_bind_param(
         $stmt, 
-        'sisiisssssss', 
+        'sisiisssssssss', 
         $jobData['project'], 
         $jobData['client_id'], 
         $jobData['priority'], 
         $jobData['assigned_to'], 
         $jobData['supervised_by'], 
+        $jobData['reported_by'], 
+        $jobData['reporter_contacts'], 
         $jobData['description'], 
         $jobData['location'], 
         $jobData['status'], 
@@ -99,6 +103,8 @@ function addJob(mysqli $conn, array $jobData) {
             j.priority,
             j.assigned_to,
             j.supervised_by,
+            j.reported_by,
+            j.reporter_contacts,
             j.description,
             j.`location`,
             j.status,
@@ -155,6 +161,8 @@ function getJobs(mysqli $conn) {
             j.priority,
             j.assigned_to,
             j.supervised_by,
+            j.reported_by,
+            j.reporter_contacts,
             j.description,
             j.`location`,
             j.status,
@@ -235,6 +243,8 @@ function updateJob(mysqli $conn, array $job) {
                 `priority` = ?,  
                 `assigned_to` = $assignee, 
                 `supervised_by` = $supervisor, 
+                `reported_by` = ?,
+                `reporter_contacts` = ?,
                 `description` = ?, 
                 `location` = ?, 
                 `status` = ?, 
@@ -249,10 +259,12 @@ function updateJob(mysqli $conn, array $job) {
     }
     if (!mysqli_stmt_bind_param(
             $stmt, 
-            'sissssssssi', 
+            'sissssssssssi', 
             $job['project'], 
             $job['client_id'], 
             $job['priority'], 
+            $job['reported_by'],
+            $job['reporter_contacts'],
             $job['description'], 
             $job['location'], 
             $job['status'], 
@@ -345,6 +357,8 @@ function updateJob(mysqli $conn, array $job) {
             j.priority,
             j.assigned_to,
             j.supervised_by,
+            j.reported_by,
+            j.reporter_contacts,
             j.description,
             j.`location`,
             j.status,
