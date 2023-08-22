@@ -37,8 +37,8 @@
 }
 div.form-group div.labels label {
     display: inline-block;
-    padding: 4px 0;
-    font-size: .875rem;
+    font-size: .8rem;
+    margin-bottom: 2.5px;
     font-family: 'Montserrat';
 }
 div.form-group div.labels label:first-child {
@@ -62,6 +62,13 @@ div.card form input::placeholder {
 
 .card form .form-group span.text-danger {
     font-size: .75rem;
+    position: absolute;
+}
+.card form .form-group span.text-danger:first-child {
+    left: 16px;
+}
+.card form .form-group span.text-danger:last-child {
+    right: 16px;
 }
 
 form select.custom-select {
@@ -633,6 +640,9 @@ div.page-options button.btn.show {
     div.form-group div.labels label {
         display: block;
         padding: 4px 0;
+    }
+    .card form .form-group span.text-danger {
+        position: static;
     }
 
 }

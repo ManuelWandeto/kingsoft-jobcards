@@ -146,7 +146,7 @@
             </textarea>
             <span class="text-danger" x-text="fields.description.error" x-cloak></span>
           </div>
-          <div class="row px-3 py-2">
+          <div class="row px-3 py-2 align-items-center">
             <div class="form-group col-sm-6 col-xl-3 p-0 pr-sm-2 pr-md-0">
               <label for="location" >Location</label>
               <input 
@@ -185,10 +185,10 @@
               </select>
             </div>
             <div class="form-group col-sm p-0">
-              <div class="labels mb-1">
+              <div class="labels">
                 <label for="startDate" >
                   <strong>From: </strong>
-                  <span x-text="moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
+                  <span x-text="fields.startDate.value && moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
                 </label>
                 <label for="endDate">
                   <strong>To:</strong> 
@@ -217,7 +217,7 @@
               <span class="text-danger" x-text="fields.endDate.error" x-cloak></span>
             </div>
           </div>
-          <div class="row px-3 row-cols-1 row-cols-md-2">
+          <div class="row px-3 mt-xl-1  row-cols-1 row-cols-md-2">
             <div class="form-group pr-md-3">
               <label for="on-completion-notes">Completion notes</label>
               <textarea name="completion_notes" class="form-control" id="on-completion-notes" rows="30" x-model="fields.completion_notes.value"></textarea>
@@ -304,7 +304,7 @@
               <span>Tags</span>
             </button>
             <!-- Tags Modal -->
-            <?php include_once('tags.php') ?>
+            <?php require_once('tags.php') ?>
 
             <template x-if="editMode">
              <button 

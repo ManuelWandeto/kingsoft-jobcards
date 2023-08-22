@@ -11,7 +11,7 @@
 -->
 <?php 
   session_start();
-  include_once('utils/redirect.php');
+  require_once('utils/redirect.php');
   if(!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
     redirect('./Login/brandlogin.php');
   }
@@ -46,7 +46,13 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@caneara/iodine@8.3.0/dist/iodine.min.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-  <script src="./assets/js/app.js" type="text/javascript"></script>
+  <script src="./assets/js/kingsoft/stores.js" type="text/javascript"></script>
+  <script src="./assets/js/kingsoft/app.js" type="text/javascript"></script>
+  <script src="./assets/js/kingsoft/files.js" type="text/javascript"></script>
+  <script src="./assets/js/kingsoft/users.js" type="text/javascript"></script>
+  <script src="./assets/js/kingsoft/clients.js" type="text/javascript"></script>
+  <script src="./assets/js/kingsoft/jobs.js" type="text/javascript"></script>
+  <script src="./assets/js/kingsoft/tags.js" type="text/javascript"></script>
   <script>
     const session = <?php echo json_encode([
       "id" => $_SESSION["user_id"],
@@ -126,7 +132,7 @@
             </a>
           </li>
           <li>
-            <a href="includes/logout.inc.php">
+            <a href="includes/logout.php">
               <i class="now-ui-icons arrows-1_share-66" style="transform: rotate(-90deg);"></i>
               <p>Logout</p>
             </a>
@@ -174,11 +180,11 @@
         <?php
 
           if(isset($_GET["page"])) {
-            include_once('edit_profile.php');
+            require_once('edit_profile.php');
           } else {
-            include_once('add_jobcard.php');
-            include_once('jobs_table.php');
-            include_once('users_section.php');
+            require_once('add_jobcard.php');
+            require_once('jobs_table.php');
+            require_once('users_section.php');
           }
         ?>
         <div id="alert-slot" style="max-width: 300px; position: fixed; top: 2%; right: 5%; z-index: 999999;">

@@ -1,16 +1,12 @@
 <?php
 session_start();
-define('UPLOAD_PATH', '../uploads/');
-$upload_dir = UPLOAD_PATH . 'user_'. $_SESSION['user_id'] . '/';
+require_once('../utils/constants.php');
+$upload_dir = UPLOAD_PATH . 'user_'. $_SESSION['user_id'] . DIRECTORY_SEPARATOR;
 
 $filename = $_GET['name'];
 $filepath = $upload_dir . $filename;
 $size = $_GET['size'];
 $type = $_GET['type'];
-// echo "Name: $filename \r\n";
-// echo "Size: $size \r\n";
-// echo "Mime type: $type \r\n";
-// exit;
 
 if (file_exists($filepath)) {
     header('Content-Description: File Transfer');
@@ -23,5 +19,8 @@ if (file_exists($filepath)) {
     flush();
     readfile($filepath);
     exit;
+} else {
+    echo 'file not found: '. $filename;
+    exit();
 }
 ?>
