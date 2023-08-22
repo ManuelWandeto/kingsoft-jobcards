@@ -1,8 +1,8 @@
 <?php
 
-include_once('../includes/db.inc.php');
-include_once('../includes/functions.inc.php');
-include_once('../utils/redirect.php');
+require_once('../db/db.inc.php');
+require_once('../db/queries/utils.inc.php');
+require_once('../utils/redirect.php');
 // session_start();
 
 if(!isset($_POST["submit"]) || !isset($_SESSION['user_id'])) {
