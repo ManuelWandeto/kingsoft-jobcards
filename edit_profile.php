@@ -6,7 +6,7 @@
                 <h4 class="card-title active">Personal info</h4>
             </div>
             <div class="card-body ">
-                <form x-data="editUserForm()" action="./controllers/update_user.inc.php" method="POST">
+                <form x-data="editUserForm()" action="./controllers/update_user.php" method="POST">
                     <div class="form-group">
                         <label for="user-name">Username</label>
                         <input type="text" name="username" id="user-name" required 

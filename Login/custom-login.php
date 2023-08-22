@@ -59,7 +59,7 @@
                 }
             }
         ?>
-        <form x-data="formData()" action="../controllers/login.inc.php" method="POST">
+        <form x-data="formData()" action="../controllers/login.php" method="POST">
             <div class="mb-4">
                 <div class="icon-input">
                     <div class="icon-input icon">
