@@ -304,7 +304,7 @@
               <span>Tags</span>
             </button>
             <!-- Tags Modal -->
-            <?php include_once('tags.php') ?>
+            <?php require_once('tags.php') ?>
 
             <template x-if="editMode">
              <button 
