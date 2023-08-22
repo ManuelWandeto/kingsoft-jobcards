@@ -15,6 +15,14 @@ function formdata() {
                 value: undefined, input: '', error: null,
                 rules: ["required"]
             },
+            reporter: {
+                value: null, error: null,
+                rules: ["optional", "minLength:3", "maxLength:50"]
+            },
+            reporterContacts: {
+                value: null, error: null,
+                rules: ["optional", "numeric"]
+            },
             description: {
                 value: null, error: null,
                 rules: ["required", "minLength:10"]
@@ -58,7 +66,23 @@ function formdata() {
             files: [],
             tags: []
         },
-        editJob({id, project, client_id, location, description, priority, status, assigned_to, supervised_by, start_date, end_date, completion_notes, issues_arrising}) {
+        editJob({
+            id, 
+            project, 
+            client_id, 
+            location, 
+            reported_by,
+            reporter_contacts,
+            description, 
+            priority, 
+            status, 
+            assigned_to, 
+            supervised_by, 
+            start_date, 
+            end_date, 
+            completion_notes, 
+            issues_arrising
+        }) {
             this.clearForm()
             clearFormErrors(this.fields)
             const job = Alpine.store('jobs').list.find(j => j.id == id)
@@ -66,6 +90,8 @@ function formdata() {
             this.fields.client.value = client_id
             this.fields.client.input = Alpine.store("clients").getClient(client_id).name
             this.fields.project.value = project
+            this.fields.reporter.value = reported_by ?? null
+            this.fields.reporterContacts.value = reporter_contacts ?? null
             this.fields.description.value = description
             this.fields.priority.value = priority
             this.fields.status.value = status
@@ -103,6 +129,8 @@ function formdata() {
             this.fields.client.value = ""
             this.fields.client.input = ""
             this.fields.project.value = ""
+            this.fields.reporter.value = ""
+            this.fields.reporterContacts.value = ""
             this.fields.description.value = ""
             this.fields.priority.value = undefined
             this.fields.status.value = undefined
@@ -131,6 +159,8 @@ function formdata() {
             formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
             formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
             formData.set('tags[]', this.fields.tags)
+            formData.set('reported_by', this.fields.reporter.value)
+            formData.set('reporter_contact', this.fields.reporterContacts.value)
 
             const config = {
                 withCredentials: true,
@@ -165,6 +195,8 @@ function formdata() {
             // set fields that may be disabled on edit
             formData.set('project', this.fields.project.value)
             formData.set('priority', this.fields.priority.value)
+            formData.set('reported_by', this.fields.reporter.value)
+            formData.set('reporter_contact', this.fields.reporterContacts.value)
             formData.set('description', this.fields.description.value)
             formData.set('assigned_to', this.fields.assignee.value ?? null)
             formData.set('supervised_by', this.fields.supervisor.value ?? null)
