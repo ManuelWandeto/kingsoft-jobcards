@@ -179,7 +179,7 @@ function getJobs(mysqli $conn) {
         LEFT JOIN jc_jobcard_tags as t
         ON j.id = t.jobcard_id
         GROUP BY j.id
-        ORDER BY priority DESC, status DESC, created_at ASC;
+        ORDER BY priority DESC, status DESC, created_at DESC;
         "
     );
     $jobs = [];
