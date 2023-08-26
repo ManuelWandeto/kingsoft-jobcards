@@ -64,7 +64,7 @@ document.addEventListener('alpine:init', async () => {
             return this.applyJobFilters(this.list)
         },
         addJob(job) {
-            this.list.push({...job})
+            this.list.unshift({...job})
         },
         editJob(jobId, fields) {
             index = this.list.findIndex(j => j.id == jobId);
