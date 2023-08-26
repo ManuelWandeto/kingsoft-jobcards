@@ -1,3 +1,4 @@
 /uploads/
 /vendor/
 db/db.inc.php
+.env
