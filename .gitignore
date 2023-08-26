@@ -1,5 +1,5 @@
 /uploads/
-/vendor/
+vendor/
 db/db.inc.php
 .env
 .vscode/settings.json
