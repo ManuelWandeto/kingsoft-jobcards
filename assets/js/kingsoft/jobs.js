@@ -12,7 +12,7 @@ function formdata() {
                 rules: ["required", "maxLength:80", "minLength:3"]
             },
             client: {
-                value: undefined, input: '', error: null,
+                value: undefined, input: '', data: null, error: null,
                 rules: ["required"]
             },
             reporter: {
@@ -153,14 +153,13 @@ function formdata() {
                 return
             }
             Alpine.store('jobs').isLoaded = false
-            
             const formData = new FormData(e.target)
             formData.set('client_id', this.fields.client.value)
             formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
             formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
             formData.set('tags[]', this.fields.tags)
-            formData.set('reported_by', this.fields.reporter.value)
-            formData.set('reporter_contact', this.fields.reporterContacts.value)
+            formData.set('reported_by', this.fields.reporter.value ?? '')
+            formData.set('reporter_contact', this.fields.reporterContacts.value ?? '')
 
             const config = {
                 withCredentials: true,
@@ -169,7 +168,7 @@ function formdata() {
                     console.log(`upload progress: ${percentCompleted}`);
                 }
             };
-            
+
             axios.post('api/jobs/add_job.php', formData, config)
             .then(res => {
                 const newJob = res.data
@@ -195,8 +194,8 @@ function formdata() {
             // set fields that may be disabled on edit
             formData.set('project', this.fields.project.value)
             formData.set('priority', this.fields.priority.value)
-            formData.set('reported_by', this.fields.reporter.value)
-            formData.set('reporter_contact', this.fields.reporterContacts.value)
+            formData.set('reported_by', this.fields.reporter.value ?? '')
+            formData.set('reporter_contact', this.fields.reporterContacts.value ?? '')
             formData.set('description', this.fields.description.value)
             formData.set('assigned_to', this.fields.assignee.value ?? null)
             formData.set('supervised_by', this.fields.supervisor.value ?? null)
