@@ -74,12 +74,14 @@
                   }"
                   @blur="($event)=> {
                     isExpanded = false
-                    let client = $store.clients.list.find(c => c.name.toLowerCase() === $event.target.value.trim().toLowerCase())
+                    let client = $store.clients.list.find(c => c.name.trim().toLowerCase() === $event.target.value.trim().toLowerCase())
                     if (!client) {
                       fields.client.value = undefined
+                      fields.client.data = null 
                       fields.location.value = null
                     } else {
                       fields.client.value = client.id
+                      fields.client.data = client
                       fields.location.value = client.location
                     }
                     
@@ -97,6 +99,7 @@
                         @click="() => {
                           fields.client.input = client.name;
                           fields.client.value = client.id
+                          fields.client.data = client;
                           fields.location.value = client.location
                           validateField(fields.client)
                         }">
@@ -133,14 +136,12 @@
               </select>
             </div>
           </div>
-          <div class="row py-1 px-3 row-cols-1 row-cols-sm-2">
-            <div class="form-group pr-sm-2">
-              <label for="reporter">Reported by</label>
-              <!-- Add disabled="editMode to reported_by" -->
+          <div class="row py-2 px-3 align-items-center">
+            <div class="form-group col-sm-6 p-0 pr-2" :class="fields.client.data && 'col-xl-3'">
+              <label for="reported_by">Reported by</label>
               <input 
-                name="reporter"
+                name="reported_by"
                 type="text" 
-                :disabled="editMode"
                 x-model="fields.reporter.value" 
                 x-on:blur="validateField(fields.reporter)" 
                 :class="fields.reporter.error ? 'border-danger' : ''"
@@ -148,7 +149,7 @@
                 placeholder="Enter name">
               <span class="text-danger" x-text="fields.reporter.error" x-cloak></span>
             </div>  
-            <div class="form-group">
+            <div class="form-group col-sm-6 p-0 pr-xl-2" :class="fields.client.data && 'col-xl-3'">
               <label for="reporter-contacts">Contacts</label>
               <input 
                 name="reporter_contacts"
@@ -160,6 +161,27 @@
                 placeholder="Enter reporter's phone">
               <span class="text-danger" x-text="fields.reporterContacts.error" x-cloak></span>
             </div>  
+            <template x-if="fields.client.data">
+              <div 
+                class="form-group col-sm p-0" 
+                x-data="{client: fields.client.data}"
+                
+                x-show="client && (client.contact_person?.trim() || client.phone?.trim())"
+                x-cloak
+              >
+                <label>Client contact</label>
+                <div class="contact-person" id="client.id">
+                  <div class="contact-name">
+                    <i class="now-ui-icons users_single-02"></i>
+                    <span x-text="client.contact_person?.trim() || 'N/A'"></span>
+                  </div>
+                  <div class="contact-phone">
+                    <i class="now-ui-icons tech_mobile"></i>
+                    <span x-text="client.phone?.trim() || 'N/A'"></span>
+                  </div>
+                </div>
+              </div>  
+            </template>
           </div>
           <div class="row px-3 form-group">
             <label for="description">Description</label>
@@ -207,7 +229,7 @@
                   "
                 >Ongoing</option>
                 <option value="OVERDUE" :disabled="editMode && isStatusDisabled('OVERDUE', job.status)">Overdue</option>
-                <option value="COMPLETED">Completed</option>
+                <option value="COMPLETED" :disabled="editMode && !fields.assignee.value">Completed</option>
                 <option value="CANCELLED">Cancelled</option>
                 <option value="SUSPENDED">Suspended</option>
               </select>
