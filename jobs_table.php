@@ -151,6 +151,9 @@
                         <th style="min-width: 100px;">
                             Client
                         </th>
+                        <th style="min-width: 150px;">
+                            Reporter
+                        </th>
                         <th style="min-width: 240px;">
                             Description
                         </th>
@@ -187,7 +190,7 @@
                         <th>Actions</th>
                     </thead>
                     <tbody>
-                        <template x-for="job in $store.jobs.getJobs()">
+                        <template x-for="job in $store.jobs.getJobs()" :key="index">
                             <tr>
                                 <td>
                                     <div class="datetime">
@@ -197,6 +200,15 @@
                                 </td>
                                 <td x-text="job.project"></td>
                                 <td x-text="$store.clients.getClient(job.client_id)?.name || 'not found'"></td>
+                                <td>
+                                    <template x-if="job.reported_by?.trim() || job.reporter_contacts?.trim()">
+                                        <div class="reporter">
+                                            <span class="reporter-name" x-text="job.reported_by ?? 'N/A'"></span>
+                                            <span class="reporter-phone" x-text="job.reporter_contacts ?? 'N/A'"></span>
+                                        </div>
+                                    </template>
+                                    <span x-show="!job.reported_by?.trim() && !job.reporter_contacts?.trim()">N/A</span>
+                                </td>
                                 <td x-text="job.description"></td>
                                 <td x-text="job.priority" :class="job.priority.toLowerCase()"></td>
                                 <td x-text="$store.users.getUser(job.assigned_to)?.username || 'Null'"></td>
