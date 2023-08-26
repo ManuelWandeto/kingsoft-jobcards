@@ -117,7 +117,24 @@ div.clients.dropdown div.dropdown-menu div.clients-list button {
     appearance: none; 
     outline: none;
 }
-
+form div.form-group div.contact-person {
+    height: 40px;
+}
+form div.form-group div.contact-person div {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+}
+form div.form-group div.contact-person > div i {
+    font-size: 1rem;
+    color: #242429;
+    position: absolute;
+    left: 16px;
+}
+form div.form-group div.contact-person,
 form .form-group div.custom-datepicker {
     display: flex;
     border: 1px solid #E3E3E3;
@@ -135,6 +152,7 @@ form .form-group div.custom-datepicker > input {
     padding: .44rem 1rem;
 }
 
+form div.form-group div.contact-person div:first-child,
 form .form-group div.custom-datepicker > input:first-child {
     border-right: 1.4px solid #E3E3E3;
 }
@@ -314,6 +332,9 @@ div.card table.alltime-jobs tbody tr td {
 div.card table.alltime-jobs tbody tr:nth-child(even) {
     background-color: #EBEBEB;
 }
+div.card table.alltime-jobs tbody tr:nth-child(even) td:not(:last-child) {
+    border-right: 1px solid #919090;
+}
 div.card table.alltime-jobs tbody {
     border-bottom: 1px solid #E3E3E3;
 }
@@ -324,6 +345,27 @@ table.persons-list tr {
     height: 60px;
 }
 
+table.alltime-jobs div.reporter {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: start;
+}
+form div.form-group div.contact-person > div.contact-name,
+table.alltime-jobs div.reporter span.reporter-name {
+    font-family: 'Verdana';
+    font-size: .9rem;
+    text-transform: capitalize;
+    letter-spacing: .1rem;
+}
+form div.form-group div.contact-person > div.contact-phone,
+table.alltime-jobs div.reporter span.reporter-phone {
+    font-family: 'Montserrat';
+    font-size: .875rem;
+}
+form div.form-group div.contact-person > div.contact-phone {
+    letter-spacing: .1rem;
+}
 div.row > div div.jobs-card table.alltime-jobs{
     transition: all .3s ease-out;
 }
@@ -628,14 +670,24 @@ div.page-options button.btn.show {
     div.form-group {
         margin-bottom: 16px;
     }
+    form .form-group div.contact-person {
+        height: unset;
+    }
+    form div.form-group div.contact-person {
+        height: unset;
+    }
+    form div.form-group div.contact-person,
     form .form-group div.custom-datepicker {
         flex-direction: column;
         border-radius: 9px;
     }
+    form div.form-group div.contact-person div:first-child,
     form .form-group div.custom-datepicker > input:first-child {
         border-right: unset;
         border-bottom: 1.4px solid #E3E3E3;
     }
+
+    form div.form-group div.contact-person div,
     form .form-group div.custom-datepicker > input {
         padding: 1rem;
     }
