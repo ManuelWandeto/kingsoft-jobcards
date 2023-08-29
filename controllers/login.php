@@ -37,15 +37,14 @@ $_SESSION['role'] = $user['role'];
 
 
 // check user folder for files that are cleared from db and delete them
-$userdir = UPLOAD_PATH . 'user_' . $_SESSION['user_id'] . '/';
+$userdir = UPLOAD_PATH . 'user_' . $_SESSION['user_id'] . DIRECTORY_SEPARATOR;
 if (file_exists($userdir)) {
     $userfiles = array_diff(scandir($userdir), array('.', '..'));
     foreach ($userfiles as $file) {
-        $filepath = $userdir . $file;
-        $query = "SELECT * FROM jc_attachments WHERE file_path = ?;";
-        $attachment = queryRow($conn, "find-file-attachment", $query, 's', $filepath);
+        $query = "SELECT * FROM `jc_attachments` WHERE `file_name` = ? AND `uploaded_by` = ?;";
+        $attachment = queryRow($conn, "find-file-attachment", $query, 'si', $file, $_SESSION["user_id"]);
         if(!$attachment) {
-            unlink($filepath);
+            unlink($userdir . $file);
         }
     }
 }
