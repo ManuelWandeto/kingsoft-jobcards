@@ -1,7 +1,67 @@
 <?php
 require_once('../../utils/constants.php');
+require_once('../../vendor/autoload.php');
+require_once(__DIR__ . '/../functions.inc.php');
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
+}
+function handleUploadError($file, $error) {
+    switch ($error) {
+        case UPLOAD_ERR_INI_SIZE:
+            throw new Exception("$file exceeds max allowed size", 400);
+
+        case UPLOAD_ERR_PARTIAL:
+            throw new Exception("$file was only partially uploaded", 500);
+
+        case UPLOAD_ERR_NO_TMP_DIR:
+            throw new Exception("$file missing a temporary folder", 500);
+
+        case UPLOAD_ERR_NO_FILE:
+            throw new Exception("$file was not uploaded", 500);
+            
+        case UPLOAD_ERR_CANT_WRITE:
+            throw new Exception("Failed to write $file to disk", 500);
+    
+        default:
+            throw new Exception("Uncaught upload error", 500);
+    }
+}
+
+function uploadFile(
+    string $inputName, 
+    string $upload_dir, 
+    string $filenamePrefix = ''
+) {
+    if (!isset($_FILES[$inputName]['name'])) {
+        throw new Exception("$inputName is not set", 500);
+    }
+    if(!$_FILES[$inputName]['name']) {
+        return false;
+    }
+    if($_FILES[$inputName]['error'] !== UPLOAD_ERR_OK ) {
+        $file = $_FILES[$inputName]['name'];
+        handleUploadError($file, $_FILES[$inputName]['error']);
+    }
+    if (!file_exists($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+    $filename = $filenamePrefix . $_FILES[$inputName]['name'];
+    $tempPath = $_FILES[$inputName]['tmp_name'];
+    $filepath = $upload_dir . $filename;
+    if (file_exists($filepath)) {
+        unlink($filepath);
+    };
+    if ($tempPath) {
+        if(move_uploaded_file($tempPath, $filepath)) {
+           return basename($filepath);
+        } else {
+            throw new Exception("error moving file to destination", 500);
+        }
+    } else {
+        throw new Exception("error reading temp path of file", 500);
+    }
+
 }
 function uploadFiles() {
     if (!isset($_FILES['attachments']['name'])) {
@@ -39,7 +99,7 @@ function uploadFiles() {
             }
             if ($tempPath) {
                 if(move_uploaded_file($tempPath, $filepath)) {
-                    $paths[] = $userdir . basename($filepath);
+                    $paths[] = basename($filepath);
                 } else {
                     throw new Exception("error moving file to destination", 500);
                 }
@@ -49,31 +109,19 @@ function uploadFiles() {
         } else {
             $file = $_FILES['attachments']['name'][$i];
 
-            switch ($_FILES['attachments']['error'][$i]) {
-                case UPLOAD_ERR_INI_SIZE:
-                    throw new Exception("$file exceeds max allowed size", 400);
-
-                case UPLOAD_ERR_PARTIAL:
-                    throw new Exception("$file was only partially uploaded", 500);
-
-                case UPLOAD_ERR_NO_TMP_DIR:
-                    throw new Exception("$file missing a temporary folder", 500);
-
-                case UPLOAD_ERR_NO_FILE:
-                    throw new Exception("$file was not uploaded", 500);
-                    
-                case UPLOAD_ERR_CANT_WRITE:
-                    throw new Exception("Failed to write $file to disk", 500);
-            
-                default:
-                    throw new Exception("Uncaught upload error", 500);
-            }
+            handleUploadError($file, $_FILES['attachments']['error'][$i]);
         }
     }
     return $paths;
 }
-function deleteUploadedFile(mysqli $conn, string $filepath) {
-    $filename = basename($filepath);
+function extract_user_id($path) {
+    $pattern = '/user_(\d+)/';
+    preg_match($pattern, $path, $matches);
+    return $matches[1];
+}
+function deleteAttachedFile(mysqli $conn, array $attachment) {
+    $filepath = $attachment['filepath'];
+    $filename = $filepath;
     
     if (!file_exists($filepath)) {
         throw new Exception("$filename doesn't exist", 404);
@@ -81,24 +129,22 @@ function deleteUploadedFile(mysqli $conn, string $filepath) {
     if (!strpos(dirname($filepath), 'user_'. $_SESSION['user_id'])) {
         throw new Exception("Unauthorised deletion, you can only delete files you posted", 401);
     }
-    deleteAttachment($conn, $filepath);
+    $ok = queryExec(
+        $conn, 
+        'Delete attachment', 
+        "DELETE FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;",
+        'isi',
+        $attachment['jobId'],
+        basename($filepath),
+        extract_user_id($filepath)
+    );
+    if(!$ok) {
+        return false;
+    }
     unlink($filepath);
     return true;
 }
-function deleteAttachment(mysqli $conn, string $filepath) {
-    $sql = "DELETE FROM jc_attachments WHERE `file_path` = ?;";
-    $stmt = mysqli_stmt_init($conn);
-    if (!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing delete attachment query: ".mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param($stmt, 's', $filepath)) {
-        throw new Exception("Error binding params to delete attachment query: ".mysqli_stmt_error($stmt), 400);
-    }
-    if (!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing delete attachment query: ".mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-}
+
 function getFileInfo(string $filepath) {
     $filename = basename($filepath);
     if (!file_exists($filepath)) {
