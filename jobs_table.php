@@ -148,7 +148,7 @@
                         <th>
                             Project
                         </th>
-                        <th style="min-width: 100px;">
+                        <th style="min-width: 120px;">
                             Client
                         </th>
                         <th style="min-width: 150px;">
@@ -199,7 +199,17 @@
                                     </div>
                                 </td>
                                 <td x-text="job.project"></td>
-                                <td x-text="$store.clients.getClient(job.client_id)?.name || 'not found'"></td>
+                                <td class="client text-center"
+                                >
+                                    <template x-if="$store.clients.getClient(job.client_id)?.logo?.trim()">
+                                        <img :src="`./uploads/client_logos/${$store.clients.getClient(job.client_id).logo}`" alt="">
+                                    </template>
+                                    <span 
+                                        x-show="!$store.clients.getClient(job.client_id)?.logo" 
+                                        x-text="$store.clients.getClient(job.client_id)?.name || 'not found'"
+                                    >
+                                    </span>
+                                </td>
                                 <td>
                                     <template x-if="job.reported_by?.trim() || job.reporter_contacts?.trim()">
                                         <div class="reporter">
