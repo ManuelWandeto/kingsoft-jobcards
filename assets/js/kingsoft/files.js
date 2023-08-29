@@ -27,9 +27,12 @@ function removeFileFromFileList(filename, inputId) {
     
     input.files = dt.files // Assign the updates list
 }
-async function deleteUploadedFile(path) {
+async function deleteUploadedFile(path, jobId) {
     try {
-        await axios.delete('api/files.delete_file.php', {data: {filepath: path}})
+        const res = await axios.delete('api/files/delete_file.php', {data: {filepath: path, jobId}})
+        if (!res.data) {
+            throw new Error("unknown error occured")
+        }
         showAlert('alert-success', 'Success!', 'Successfully deleted file')
         return true;
     } catch (e) {
