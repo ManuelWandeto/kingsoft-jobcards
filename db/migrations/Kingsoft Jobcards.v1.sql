@@ -96,11 +96,15 @@ DELIMITER ;
 CREATE TABLE `jc_attachments` (
 	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
 	`jobcard_id` MEDIUMINT NOT NULL,
-	`file_path` VARCHAR(255) NOT NULL,
+	`file_name` VARCHAR(255) NOT NULL,
+  `uploaded_by` MEDIUMINT NOT NULL,
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE `jc_attachments` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE jc_attachments ADD COLUMN `uploaded_by` MEDIUMINT NOT NULL;
+ALTER TABLE jc_attachments ADD FOREIGN KEY (`uploaded_by`) REFERENCES jc_users(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE jc_attachments ADD CONSTRAINT `uc_jobcard_id_file_name_uploaded_by` UNIQUE (`jobcard_id`, `file_name`, `uploaded_by`);
+ALTER TABLE jc_attachments CHANGE COLUMN `file_path` `file_name` VARCHAR(255) NOT NULL;
 
 CREATE TABLE jc_tags (
 	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
@@ -139,3 +143,15 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+CREATE TABLE `jc_logs` (
+  `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+  `severity` ENUM('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL') NOT NULL,
+  `action_type` VARCHAR(255) NOT NULL,
+  `user_id` MEDIUMINT,
+  `description` TEXT NOT NULL,
+  `stack_trace` TEXT,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE `jc_logs` ADD FOREIGN KEY (`user_id`) REFERENCES `jc_users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
