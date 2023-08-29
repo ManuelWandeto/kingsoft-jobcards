@@ -132,7 +132,7 @@
             </a>
           </li>
           <li>
-            <a href="includes/logout.php">
+            <a href="controllers/logout.php">
               <i class="now-ui-icons arrows-1_share-66" style="transform: rotate(-90deg);"></i>
               <p>Logout</p>
             </a>
