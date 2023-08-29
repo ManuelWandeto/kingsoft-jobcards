@@ -1,4 +1,11 @@
 function clientFormData() {
+    const config = {
+        withCredentials: true,
+        onUploadProgress: progressEvent => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log(`upload progress: ${percentCompleted}`);
+        }
+    };
     return {
         fields: {
             name: {
@@ -49,6 +56,7 @@ function clientFormData() {
             this.fields.location.value = ""
             this.fields.phone.value = ""
             this.fields.contactPerson.value = ""
+            document.querySelector('input#client-logo').files = new DataTransfer().files
             clearFormErrors(this.fields)
             this.isFormValid()
         },
@@ -58,80 +66,39 @@ function clientFormData() {
                 return
             }
             Alpine.store('clients').isLoaded = false
-            fetch("api/clients/add_client.php", {
-                method: "POST",
-                mode: "same-origin",
-                credentials: "same-origin",
-                body: JSON.stringify({
-                    name: this.fields.name.value,
-                    email: this.fields.email.value,
-                    location: this.fields.location.value,
-                    contact_person: this.fields.contactPerson.value,
-                    phone: this.fields.phone.value
-                }),
-                headers: {
-                  "Content-Type": "application/json; charset=UTF-8",
-                  "Accept": "application/json"
-                }
-              })
-                .then(async (response) => {
-                    if(!response.ok) {
-                        let errorMsg = await response.text()
-                        throw new Error(errorMsg)
-                    }
-                    return response.json();
-                })
-                .then((newClient) => {
+            const formData = new FormData(e.target)
+            
+            axios.post("api/clients/add_client.php", formData, config)
+            .then((res) => {
+                    const newClient = res.data
                     Alpine.store('clients').isLoaded = true
                     Alpine.store('clients').addClient(newClient)
                     showAlert('alert-success', 'Success!', 'Successfully added client')
                 })
                 .catch(e => {
                     Alpine.store('clients').isLoaded = true
-                    showAlert('alert-danger', 'Error occured', `Error adding client: ${e}`, 3500)
+                    showAlert('alert-danger', 'Error occured', `Error adding client: ${e.response.data}`, 3500)
                 })
             this.clearForm()
         },
-        submitEdit(clientId, fields = {
-            name: this.fields.name.value,
-            email: this.fields.email.value,
-            contact_person: this.fields.contactPerson.value,
-            location: this.fields.location.value,
-            phone: this.fields.phone.value,
-        }) {
+        submitEdit(e, clientId) {
             var ok = this.isFormValid();
             if( ! ok ) {
                 return
             }
             Alpine.store('clients').isLoaded = false
-            fetch("api/clients/update_client.php", {
-                method: "POST",
-                mode: "same-origin",
-                credentials: "same-origin",
-                body: JSON.stringify({
-                    id: clientId,
-                    ...fields
-                }),
-                headers: {
-                  "Content-Type": "application/json; charset=UTF-8",
-                  "Accept": "application/json"
-                }
-              })
-                .then(async (response) => {
-                    if(!response.ok) {
-                        let errorMsg = await response.text()
-                        throw new Error(errorMsg)
-                    }
-                    return response.json();
-                })
-                .then((updatedClient) => {
+            const formData = new FormData(e.target)
+            formData.set('id', clientId)
+            axios.post("api/clients/update_client.php", formData, config)
+                .then((res) => {
+                    const updatedClient = res.data
                     Alpine.store('clients').isLoaded = true
                     Alpine.store('clients').editClient(updatedClient.id, updatedClient)
                     showAlert('alert-success', 'Success!', 'Successfully updated client')
                 })
                 .catch(e => {
                     Alpine.store('clients').isLoaded = true
-                    showAlert('alert-danger', 'Error occured', `Error updating client: ${e}`, 3500)
+                    showAlert('alert-danger', 'Error occured', `Error updating client: ${e.response.data}`, 3500)
                 })
             this.clearForm()
         }
@@ -160,4 +127,17 @@ function deleteClient(id) {
         }).catch(e => {
             showAlert('alert-danger', 'Error occured', `Error deleting client: ${e}`, 3500)
         })
+}
+async function deleteClientLogo(filename, clientId) {
+    try {
+        const res = await axios.delete('api/clients/delete_logo.php', {data: {filename, clientId}})
+        if (!res.data) {
+            throw new Error("unknown error occured", 500)
+        }
+        showAlert('alert-success', 'Success!', 'Successfully deleted logo')
+        return true;
+    } catch (e) {
+        showAlert('alert-danger', 'Error occured', `Error deleting logo: ${e.response.data}`, 3500)
+        return false;
+    }
 }
