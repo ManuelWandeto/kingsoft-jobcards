@@ -41,7 +41,7 @@
         </template>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 px-3 py-1">
             <div class="form-group pr-sm-2">
-              <label for="project">Project</label>
+              <label for="project">Project *</label>
               <input 
                 name="project"
                 type="text" 
@@ -54,7 +54,7 @@
               <span class="text-danger" x-text="fields.project.error" x-cloak></span>
             </div>
             <div class="form-group pr-xl-2">
-              <label for="select-client">Client name</label>
+              <label for="select-client">Client name *</label>
               <div class="clients dropdown" x-data="{isExpanded: false}">
                 <input 
                   name="client_id"
@@ -137,7 +137,9 @@
             </div>
           </div>
           <div class="row py-2 px-3 align-items-center">
-            <div class="form-group col-sm-6 p-0 pr-2" :class="fields.client.data && 'col-xl-3'">
+            <div class="form-group col-sm-6 p-0 pr-2" 
+              :class="(fields.client.data?.contact_person || fields.client.data?.phone) && 'col-xl-3'"
+            >
               <label for="reported_by">Reported by</label>
               <input 
                 name="reported_by"
@@ -149,7 +151,9 @@
                 placeholder="Enter name">
               <span class="text-danger" x-text="fields.reporter.error" x-cloak></span>
             </div>  
-            <div class="form-group col-sm-6 p-0 pr-xl-2" :class="fields.client.data && 'col-xl-3'">
+            <div class="form-group col-sm-6 p-0 pr-xl-2" 
+              :class="(fields.client.data?.contact_person || fields.client.data?.phone) && 'col-xl-3'"
+            >
               <label for="reporter-contacts">Contacts</label>
               <input 
                 name="reporter_contacts"
@@ -161,7 +165,7 @@
                 placeholder="Enter reporter's phone">
               <span class="text-danger" x-text="fields.reporterContacts.error" x-cloak></span>
             </div>  
-            <template x-if="fields.client.data">
+            <template x-if="fields.client.data?.contact_person || fields.client.data?.phone">
               <div 
                 class="form-group col-sm p-0" 
                 x-data="{client: fields.client.data}"
@@ -184,7 +188,7 @@
             </template>
           </div>
           <div class="row px-3 form-group">
-            <label for="description">Description</label>
+            <label for="description">Description *</label>
             <textarea 
               name="description" 
               :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
@@ -198,7 +202,7 @@
           </div>
           <div class="row px-3 py-2 align-items-center">
             <div class="form-group col-sm-6 col-xl-3 p-0 pr-sm-2 pr-md-0">
-              <label for="location" >Location</label>
+              <label for="location" >Location *</label>
               <input 
                 name="location"
                 type="text" 
@@ -211,7 +215,7 @@
               <span class="text-danger" x-text="fields.location.error" x-cloak></span>
             </div>
             <div class="form-group col-sm-6 col-xl-3 p-0 px-md-2">
-              <label for="status">Status</label>
+              <label for="status">Status *</label>
               <select 
                 class="custom-select" id="status"
                 name="status"
@@ -237,11 +241,11 @@
             <div class="form-group duration col-sm p-0">
               <div class="labels">
                 <label for="startDate" >
-                  <strong>From: </strong>
+                  <strong>* From: </strong>
                   <span x-text="fields.startDate.value && moment(fields.startDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
                 </label>
                 <label for="endDate">
-                  <strong>To:</strong> 
+                  <strong>* To:</strong> 
                   <span x-text="fields.endDate.value && moment(fields.endDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
                 </label>
               </div>
@@ -326,7 +330,7 @@
                                 <div class="modal-footer">
                                   <button type="button" class="btn btn-secondary mr-3" data-dismiss="modal">Close</button>
                                   <button type="button" class="btn btn-primary" data-dismiss="modal" @click = "() => {
-                                    deleteUploadedFile(file.db_path).then(ok => {
+                                    deleteUploadedFile(file.db_path, job.id).then(ok => {
                                       const i = fields.files.findIndex(f => f.name === file.name)
   
                                       fields.files.splice(i, 1)
@@ -371,7 +375,7 @@
             <select class="custom-select" name="priority" id="priority" required x-model="fields.priority.value"
               :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
             >
-              <option selected disabled value="">Set priority</option>
+              <option selected disabled value="">Set priority *</option>
               <option value="URGENT">Urgent</option>
               <option value="MEDIUM">Medium</option>
               <option value="LOW">Low</option>
@@ -383,7 +387,7 @@
         </form>
       </div>
       <div class="card-footer">
-        
+        <small>Fields marked with (*) are required</small>
       </div>
     </div>
   </div>
