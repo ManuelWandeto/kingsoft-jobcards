@@ -11,11 +11,11 @@ $decoded = json_decode($content, true);
   //If json_decode failed, the JSON is invalid.
 if( is_array($decoded)) {
     try {
-        $ok = deleteUploadedFile($conn, $decoded['filepath']);
+        $ok = deleteAttachedFile($conn, $decoded);
         if (!$ok) {
             throw new Exception("Failed to delete file: ". basename($decoded['filepath']), 500);
         }
-        echo $ok;
+        echo json_encode($ok);
         exit();
     } catch (Exception $e) {
         respondWith($e->getCode(), $e->getMessage());
