@@ -17,8 +17,8 @@
                         @click ="() => {
                             showForm = !showForm
                             console.log(window.user)
+                            clearForm()
                             if (editMode) {
-                                clearForm()
                                 editMode = false
                                 showForm = false
                             }
@@ -39,10 +39,12 @@
                 <span class="error-description"></span>
             </div>
             <form 
+                id="clientForm"
                 action="" 
+                enctype="multipart/form-data"
                 class="form-grup" 
                 @submit.prevent="editMode ? ()=>{
-                    submitEdit(clientdata.id)
+                    submitEdit($event, clientdata.id)
                     editMode = false;
                 } : ()=>{
                     submit($event)
@@ -54,7 +56,7 @@
                         <label for="new-client-name">Client name</label>
                         <input
                             type="text" 
-                            name="clientName"
+                            name="name"
                             id="new-client-name" required class="form-control" 
                             placeholder="Enter client name" 
                             x-model="fields.name.value"
@@ -93,7 +95,7 @@
                         <label for="contact-person">Contact person</label>
                         <input
                             type="text" 
-                            name="clientName"
+                            name="contact_person"
                             id="contact-person" class="form-control" 
                             placeholder="Enter name" 
                             x-model="fields.contactPerson.value"
@@ -114,6 +116,51 @@
                             :class="fields.phone.error ? 'border-danger' : ''"
                         />    
                         <span class="text-danger" x-text="fields.phone.error" x-cloak></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="client-logo" x-text="editMode && clientdata.logo?.trim() ? 'Update client logo' : 'Upload client logo'"></label>
+                        <div class="client-logo">
+                            <template x-if="clientdata.logo?.trim()">
+                                <div>
+                                    <img :src="`./uploads/client_logos/${clientdata.logo}`" alt="">
+                                    <button type="button" class="icon-button" data-toggle="modal" data-target="#deleteLogoModal">
+                                        <i class="now-ui-icons ui-1_simple-remove"></i>
+                                    </button>
+                                    <div class="modal fade" id="deleteLogoModal" tabindex="-1" role="dialog" aria-labelledby="deletefile" aria-hidden="true">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Delete this logo?</h5>
+                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p x-text="`This will delete the uploaded logo: ${clientdata.logo} from the server, there's no undo, continue?`"></p>
+                                                </div>
+                                                <div class="modal-footer d-flex justify-content-between">
+                                                    <button type="button" class="btn btn-secondary mr-3" data-dismiss="modal">Close</button>
+                                                    <button type="button" class="btn btn-primary" data-dismiss="modal" @click = "() => {
+                                                        $store.clients.isLoaded = false
+                                                        deleteClientLogo(clientdata.logo, clientdata.id)
+                                                            .then(ok => {
+                                                                if(ok) {
+                                                                    const client = $store.clients.getClient(clientdata.id)
+                                                                    client.logo = null
+                                                                }
+                                                                $store.clients.isLoaded = true
+                                                            })
+                                                    }">Delete file</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <input type="file" id="client-logo" name="logo" class="form-control" 
+                                accept="image/*"
+                            >
+                        </div>
                     </div>
                     <button 
                         type="submit" 
