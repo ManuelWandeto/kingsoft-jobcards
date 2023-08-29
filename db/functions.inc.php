@@ -64,6 +64,27 @@ function IdExists(
     mysqli_stmt_close($stmt);
     return $result;
 }
+
+function queryExec( 
+    mysqli $conn, 
+    string $queryName,
+    string $sql,
+    string $paramTypes,
+    ...$params
+) {
+    $stmt = mysqli_stmt_init($conn);
+    if (!mysqli_stmt_prepare($stmt, $sql)) {
+        throw new Exception("Error preparing $queryName query: ".mysqli_stmt_error($stmt), 500);
+    }
+    if (!mysqli_stmt_bind_param($stmt, $paramTypes, ...$params)) {
+        throw new Exception("Error binding params to $queryName query: ".mysqli_stmt_error($stmt), 400);
+    }
+    if (!mysqli_stmt_execute($stmt)) {
+        throw new Exception("Error executing $queryName query: ".mysqli_stmt_error($stmt), 500);
+    }
+    mysqli_stmt_close($stmt);
+    return true;
+}
 function queryRow(
     mysqli $conn, 
     string $queryName,
