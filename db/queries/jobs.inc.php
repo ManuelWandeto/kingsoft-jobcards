@@ -3,9 +3,9 @@ require_once(__DIR__ . '/../functions.inc.php');
 require_once('tags.inc.php');
 require_once('files.inc.php');
 function addJob(mysqli $conn, array $jobData) {
-    $filepaths = [];
+    $filenames = [];
     try {
-        $filepaths = uploadFiles();
+        $filenames = uploadFiles();
     } catch (Exception $e) {
         throw $e;
     }
@@ -58,15 +58,15 @@ function addJob(mysqli $conn, array $jobData) {
     }
     mysqli_stmt_close($stmt);
     $lastInsertId = mysqli_insert_id($conn);
-    if ($filepaths) {
+    if ($filenames) {
         // IF attachments have been uploaded, post them to the attachments table
-        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_path`) VALUES (?, ?)';
+        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_name`, `uploaded_by`) VALUES (?, ?, ?)';
         $stmt = mysqli_stmt_init($conn);
         if(!mysqli_stmt_prepare($stmt, $sql)) {
             throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
         }
-        for ($i=0; $i < count($filepaths); $i++) { 
-            $boundOk = mysqli_stmt_bind_param($stmt, 'is', $lastInsertId, $filepaths[$i]);
+        for ($i=0; $i < count($filenames); $i++) { 
+            $boundOk = mysqli_stmt_bind_param($stmt, 'isi', $lastInsertId, $filenames[$i], $_SESSION['user_id']);
             if (!$boundOk) {
                 throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
             }
@@ -112,7 +112,7 @@ function addJob(mysqli $conn, array $jobData) {
             j.end_date,
             j.completion_notes,
             j.issues_arrising,
-            GROUP_CONCAT(DISTINCT a.file_path) as files,
+            GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
             GROUP_CONCAT(DISTINCT t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
@@ -131,7 +131,7 @@ function addJob(mysqli $conn, array $jobData) {
         $files = [];
         $paths = explode(',', $newJob['files']);
         foreach ($paths as $path) {
-            $files[] = getFileInfo(UPLOAD_PATH . $path);
+            $files[] = getFileInfo(UPLOAD_PATH . join(DIRECTORY_SEPARATOR, explode('/', $path)));
         }
         $newJob['files'] = $files;
     }
@@ -170,7 +170,7 @@ function getJobs(mysqli $conn) {
             j.end_date,
             j.completion_notes,
             j.issues_arrising,
-            GROUP_CONCAT(DISTINCT a.file_path) as files,
+            GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
             GROUP_CONCAT(DISTINCT t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
@@ -194,12 +194,20 @@ function getJobs(mysqli $conn) {
             $files = [];
             $paths = explode(',', $row['files']);
             foreach ($paths as $path) {
-                $filepath = UPLOAD_PATH . $path;
+                $filepath = UPLOAD_PATH . join(DIRECTORY_SEPARATOR, explode('/', $path));
                 try {
                     $files[] = getFileInfo($filepath);
                 } catch (Exception $e) {
                     if($e->getCode() == 404) {
-                        deleteAttachment($conn, $filepath);
+                        queryExec(
+                            $conn, 
+                            'Delete attachment', 
+                            "DELETE FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;",
+                            'isi',
+                            $row['id'],
+                            basename($filepath),
+                            extract_user_id($filepath)
+                        );
                         continue;
                     }
                     throw $e;
@@ -221,9 +229,9 @@ function getJobs(mysqli $conn) {
     return $jobs;
 }
 function updateJob(mysqli $conn, array $job) {
-    $filepaths = [];
+    $filenames = [];
     try {
-        $filepaths = uploadFiles();
+        $filenames = uploadFiles();
     } catch (Exception $e) {
         throw $e;
     }
@@ -280,23 +288,35 @@ function updateJob(mysqli $conn, array $job) {
         throw new Exception("Error executing update job query: ". mysqli_stmt_error($stmt), 500);
     }
     mysqli_stmt_close($stmt);
-    if ($filepaths) {
+    if ($filenames) {
         // IF attachments have been uploaded, post them to the attachments table
-        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_path`) VALUES (?, ?);';
-        $stmt = mysqli_stmt_init($conn);
-        if(!mysqli_stmt_prepare($stmt, $sql)) {
-            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-        }
-        for ($i=0; $i < count($filepaths); $i++) { 
-            $boundOk = mysqli_stmt_bind_param($stmt, 'is', $id, $filepaths[$i]);
+        for ($i=0; $i < count($filenames); $i++) { 
+            $attachment_Exists = queryRow(
+                $conn, 
+                'Attachment exists', 
+                'SELECT * FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;',
+                'isi',
+                $id,
+                $filenames[$i],
+                $_SESSION['user_id']
+            );
+            if($attachment_Exists) {
+                continue;
+            }
+            $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_name`, `uploaded_by`) VALUES (?, ?, ?);';
+            $stmt = mysqli_stmt_init($conn);
+            if(!mysqli_stmt_prepare($stmt, $sql)) {
+                throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+            }
+            $boundOk = mysqli_stmt_bind_param($stmt, 'isi', $id, $filenames[$i], $_SESSION['user_id']);
             if (!$boundOk) {
                 throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
             }
             if(!mysqli_stmt_execute($stmt)) {
                 throw new Exception("Error executing insert attachment query: ".mysqli_stmt_error($stmt), 500);
             }
+            mysqli_stmt_close($stmt);
         }
-        mysqli_stmt_close($stmt);
     }
     $oldTagsRecord = queryRow(
         $conn, 
@@ -366,7 +386,7 @@ function updateJob(mysqli $conn, array $job) {
             j.end_date,
             j.completion_notes,
             j.issues_arrising,
-            GROUP_CONCAT(DISTINCT a.file_path) as files,
+            GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
             GROUP_CONCAT(DISTINCT t.tag_id) as tags,
             j.created_at
         FROM jc_jobcards as j
@@ -385,7 +405,7 @@ function updateJob(mysqli $conn, array $job) {
         $files = [];
         $paths = explode(',', $updatedJob['files']);
         foreach ($paths as $path) {
-            $files[] = getFileInfo(UPLOAD_PATH . $path);
+            $files[] = getFileInfo(UPLOAD_PATH . join(DIRECTORY_SEPARATOR, explode('/', $path)));
         }
         $updatedJob['files'] = $files;
     }
