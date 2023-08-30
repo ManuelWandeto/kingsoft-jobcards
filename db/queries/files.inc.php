@@ -120,13 +120,13 @@ function extract_user_id($path) {
     return $matches[1];
 }
 function deleteAttachedFile(mysqli $conn, array $attachment) {
-    $filepath = $attachment['filepath'];
-    $filename = $filepath;
+    $filename = $attachment['filename'];
+    $filepath = UPLOAD_PATH . "user_{$attachment['uploadedBy']}" . DIRECTORY_SEPARATOR .  $filename;
     
     if (!file_exists($filepath)) {
         throw new Exception("$filename doesn't exist", 404);
     }
-    if (!strpos(dirname($filepath), 'user_'. $_SESSION['user_id'])) {
+    if ($attachment['uploadedBy'] != $_SESSION['user_id']) {
         throw new Exception("Unauthorised deletion, you can only delete files you posted", 401);
     }
     $ok = queryExec(
@@ -135,8 +135,8 @@ function deleteAttachedFile(mysqli $conn, array $attachment) {
         "DELETE FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;",
         'isi',
         $attachment['jobId'],
-        basename($filepath),
-        extract_user_id($filepath)
+        $filename,
+        $attachment['uploadedBy']
     );
     if(!$ok) {
         return false;
@@ -157,7 +157,7 @@ function getFileInfo(string $filepath) {
         "name" => $filename,
         "size" => $filesize,
         "type" => $filetype,
-        "db_path" => $filepath,
+        "uploadedBy" => extract_user_id($filepath),
         "lastModified" => $lastModified
     ];
 }
