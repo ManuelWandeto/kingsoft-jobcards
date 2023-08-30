@@ -25,20 +25,34 @@ function addClient(mysqli $conn, array $client) {
     if ($clientExists) {
         throw new Exception("client with name $clientName already exists", 400);
     }
-    $sql = 'INSERT INTO jc_clients (`name`, email, `contact_person`, `phone`, `location`, `logo`) VALUES (?, ?, ?, ?, ?, ?);';
+    $sql = 
+    'INSERT INTO jc_clients (
+        `name`, 
+        `email`, 
+        `contact_person`, 
+        `phone`, 
+        `location`, 
+        `logo`, 
+        `last_update_date`, 
+        `last_update_exe`
+    ) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?);';
+
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
     }
     $boundOk = mysqli_stmt_bind_param(
         $stmt, 
-        'ssssss', 
+        'ssssssss', 
         $clientName, 
         $client['email'], 
         $client['contact_person'], 
         $client['phone'], 
         $client['location'],
-        $logo
+        $logo,
+        $client['last-update-date'],
+        $client['last-update-exe']
     );
     if(!$boundOk) {
         throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
@@ -91,20 +105,33 @@ function updateClient(mysqli $conn, array $client) {
         }
     }
     // if id exists, perform update
-    $sql = 'UPDATE jc_clients SET `name` = ?, `email` = ?, `contact_person` = ?, `phone` = ?, `location` = ?, `logo` = ? WHERE id = ?;';
+    $sql = 
+        'UPDATE jc_clients 
+            SET 
+            `name` = ?, 
+            `email` = ?, 
+            `contact_person` = ?, 
+            `phone` = ?, 
+            `location` = ?, 
+            `logo` = ?,
+            `last_update_date` = ?,
+            `last_update_exe` = ?
+        WHERE id = ?;';
     $stmt = mysqli_stmt_init($conn);
     if(!mysqli_stmt_prepare($stmt, $sql)) {
         throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
     }
     if (!mysqli_stmt_bind_param(
         $stmt, 
-        'ssssssi', 
+        'ssssssssi', 
         $client['name'], 
         $client['email'], 
         $client['contact_person'], 
         $client['phone'], 
         $client['location'], 
         $logo, 
+        $client['last-update-date'],
+        $client['last-update-exe'],
         $id
     )) {
         throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
