@@ -89,7 +89,7 @@
                               <div class="color-label" :style="{backgroundColor: tag.colorcode}">
                                 <span class="label" x-text="tag.label"></span>  
                               </div>
-                              <button type="button" class="icon-button" @click="()=> {
+                              <button type="button" x-show="session.role !== 'USER'" class="icon-button" @click="()=> {
                                 editMode = true;
                                 form.editTag(tag)
                                 tagData = tag
@@ -130,7 +130,7 @@
                     }">Create</button>
                   </div>
                   <div class="modal-footer" x-show="!addMode && !editMode && !deleteMode && !error" >
-                    <button type="button" class="btn btn-secondary w-100" 
+                    <button x-show="session.role !== 'USER'" type="button" class="btn btn-secondary w-100" 
                       @click="()=> {
                         addMode = true;
                         form.editTag({label: '', colorcode: '#4C6B1F'})
@@ -138,6 +138,7 @@
                     >
                       Create New Tag
                     </button>
+                    <small x-show="session.role === 'USER'">Select all that apply</small>
                   </div>
                   <div class="modal-footer" x-show="deleteMode" >
                     <button type="button" class="btn btn-danger w-100" 
