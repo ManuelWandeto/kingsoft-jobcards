@@ -11,7 +11,7 @@ try {
     if (!$ok) {
         throw new Exception("failed to delete tag", 500);
     }
-    echo $ok;
+    echo json_encode($ok);
     exit();
 } catch (Exception $e) {
     respondWith($e->getCode(), $e->getMessage());
