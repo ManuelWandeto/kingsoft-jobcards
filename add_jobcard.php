@@ -301,11 +301,11 @@
                       <i class="now-ui-icons" :class="file.type.includes('image') ? 'design_image' : 'files_paper'"></i>
                       <span class="name" x-text="shortenFileName(file.name)"></span>
                       <span class="size" x-text="returnFileSize(file.size)"></span>
-                      <template x-if="!file.db_path || file.db_path.includes(`user_${session.id}`)">
+                      <template x-if="!file.uploadedBy || file.uploadedBy == session.id">
                         <div x-id="['delete-file']">
                           <button type="button" class="icon-button" @click="()=>{
                             const i = fields.files.findIndex(f => f.name === file.name)
-                            if(!file.db_path) {
+                            if(!file.uploadedBy) {
                               removeFileFromFileList(file.name, 'files')
                               fields.files.splice(i, 1)
                               return
@@ -330,7 +330,7 @@
                                 <div class="modal-footer">
                                   <button type="button" class="btn btn-secondary mr-3" data-dismiss="modal">Close</button>
                                   <button type="button" class="btn btn-primary" data-dismiss="modal" @click = "() => {
-                                    deleteUploadedFile(file.db_path, job.id).then(ok => {
+                                    deleteUploadedFile(file.name, file.uploadedBy, job.id).then(ok => {
                                       const i = fields.files.findIndex(f => f.name === file.name)
   
                                       fields.files.splice(i, 1)
