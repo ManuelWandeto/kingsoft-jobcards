@@ -50,13 +50,16 @@ function tagFormData() {
                     withCredentials: true,
                 })
                 newTag = res.data
+                if(!newTag) {
+                    throw new Error('Unexpected error occured')
+                }
                 Alpine.store('tags').isLoaded = true
                 Alpine.store('tags').addTag(newTag)
                 showAlert('alert-success', 'Success!', 'Successfully added tag')
                 
-            } catch (error) {
+            } catch (e) {
                 Alpine.store('tags').isLoaded = true
-                showAlert('alert-danger', 'Error occured', `Error adding tag: ${error.response.data}`, 3500)
+                showAlert('alert-danger', 'Error occured', `Error adding tag: ${e.response?.data ?? e}`, 3500)
             } finally {
                 this.clearForm()
                 return
@@ -77,12 +80,15 @@ function tagFormData() {
                     withCredentials: true,
                 })
                 const updatedTag = res.data
+                if(!updatedTag) {
+                    throw new Error('Unexpected error occured')
+                }
                 Alpine.store('tags').editTag(updatedTag.id, updatedTag)
                 Alpine.store('tags').isLoaded = true
                 showAlert('alert-success', 'Success!', 'Successfully updated tag')
-            } catch (error) {
+            } catch (e) {
                 Alpine.store('tags').isLoaded = true
-                showAlert('alert-danger', 'Error occured', `Error updating tag: ${e.response.data}`, 3500)
+                showAlert('alert-danger', 'Error occured', `Error updating tag: ${e.response?.data ?? e}`, 3500)
             } finally {
                 this.clearForm()
                 return
@@ -113,7 +119,7 @@ function tagFormData() {
                 // delete the tag from their tags array property
                 showAlert('alert-success', 'Success!', 'Successfully deleted tag')
                 
-            } catch (error) {
+            } catch (e) {
                 Alpine.store('tags').isLoaded = true
                 showAlert('alert-danger', 'Error occured', `Error deleting tag: ${e.response?.data ?? e}`, 3500)
             } finally {
