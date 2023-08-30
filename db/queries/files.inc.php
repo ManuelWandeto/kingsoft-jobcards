@@ -37,7 +37,7 @@ function uploadFile(
         throw new Exception("$inputName is not set", 500);
     }
     if(!$_FILES[$inputName]['name']) {
-        return false;
+        return null;
     }
     if($_FILES[$inputName]['error'] !== UPLOAD_ERR_OK ) {
         $file = $_FILES[$inputName]['name'];
