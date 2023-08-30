@@ -1,6 +1,7 @@
 <div 
         class="card card-tasks" 
         x-data="{editMode: false, showForm: false, clientdata: {}, ...clientFormData() }" 
+        x-effect="console.log('date value: ', fields.lastUpdateDate.value)"
         style="position: relative;"
         :style = "editMode && {border: '1px solid #E86252'}"
     >
@@ -116,6 +117,27 @@
                             :class="fields.phone.error ? 'border-danger' : ''"
                         />    
                         <span class="text-danger" x-text="fields.phone.error" x-cloak></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="last-update-date">Last server update</label>
+                        <div class="server-field">
+                            <input
+                                type="date" 
+                                name="last-update-date"
+                                id="last-update-date" 
+                                x-model="fields.lastUpdateDate.value"
+                            />    
+                            <input
+                                type="text" 
+                                name="last-update-exe"
+                                id="last-update-exe"
+                                placeholder="Enter version number" 
+                                x-model="fields.lastUpdateExe.value"
+                                @blur="validateField(fields.lastUpdateExe)"
+                                :class="fields.lastUpdateExe.error ? 'border-danger' : ''"
+                            />    
+                        </div>
+                        <span class="text-danger" x-text="fields.lastUpdateExe.error" x-cloak></span>
                     </div>
                     <div class="form-group">
                         <label for="client-logo" x-text="editMode && clientdata.logo?.trim() ? 'Update client logo' : 'Upload client logo'"></label>
