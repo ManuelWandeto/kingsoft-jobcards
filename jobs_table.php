@@ -206,7 +206,7 @@
                                     </template>
                                     <span 
                                         x-show="!$store.clients.getClient(job.client_id)?.logo" 
-                                        x-text="$store.clients.getClient(job.client_id)?.name || 'not found'"
+                                        x-text="$store.clients.getClient(job.client_id)?.name || 'loading..'"
                                     >
                                     </span>
                                 </td>
@@ -269,7 +269,7 @@
                                                                             </div>
                                                                             <div class="download">
                                                                                 <strong class="size" x-text="returnFileSize(file.size)"></strong>
-                                                                                <a :href="`controllers/download.php?name=${file.name}&size=${file.size}&type=${file.type}`" 
+                                                                                <a :href="`controllers/download.php?name=${encodeURIComponent(file.name)}&by=${file.uploadedBy}&size=${file.size}&type=${encodeURIComponent(file.type)}`" 
                                                                                     class="icon-button"
                                                                                 >
                                                                                     <i class="now-ui-icons arrows-1_cloud-download-93"></i>
