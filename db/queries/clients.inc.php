@@ -148,7 +148,7 @@ function getClients(mysqli $conn) {
         return $clients;
     }
     while ($row = mysqli_fetch_assoc($results)) {
-        if($row['logo'] && strlen($row['logo'])) {
+        if(isset($row['logo']) && strlen($row['logo'])) {
             $logo = LOGO_PATH . $row['logo'];
             if(!file_exists($logo)) {
                 $id = $row['id'];
