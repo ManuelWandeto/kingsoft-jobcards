@@ -13,7 +13,7 @@ if( is_array($decoded)) {
     try {
         $ok = deleteAttachedFile($conn, $decoded);
         if (!$ok) {
-            throw new Exception("Failed to delete file: ". basename($decoded['filepath']), 500);
+            throw new Exception("Failed to delete file: ". $decoded['filename'], 500);
         }
         echo json_encode($ok);
         exit();
