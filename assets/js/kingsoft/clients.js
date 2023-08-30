@@ -6,6 +6,18 @@ function clientFormData() {
             console.log(`upload progress: ${percentCompleted}`);
         }
     };
+    Iodine.rule('requiredIf', (exe, updateDate) => {
+        if(updateDate) {
+            return exe?.trim() ? true : false
+        }
+        return true
+    });
+    Iodine.rule('exeVersion', (value) => {
+        const versionRegex = /^[Vv]\d{4}$|^[Vv]\d{2}\.\d{2}(\.\d{2})?$|^[Vv]\d{6}$/
+        return value?.trim() ? versionRegex.test(value)  : true
+    })
+    Iodine.setErrorMessage('requiredIf', "Version number is required if last update date is filled");
+    Iodine.setErrorMessage('exeVersion', "Invalid exe version");
     return {
         fields: {
             name: {
@@ -27,19 +39,34 @@ function clientFormData() {
             phone: {
                 value: null, error: null,
                 rules: ["optional", "numeric"]
-            }
+            },
+            lastUpdateDate: {
+                value: null, error: null,
+                rules: ["optional"]
+            },
+            lastUpdateExe: {
+                value: null, error: null,
+                rules: ["exeVersion", "requiredIf"]
+            },
+            
         },
-        editClient({name, email, contact_person, phone, location}) {
+        editClient({name, email, contact_person, phone, location, last_update_date, last_update_exe}) {
             clearFormErrors(this.fields)
             this.fields.name.value = name
             this.fields.email.value = email
             this.fields.location.value = location
             this.fields.contactPerson.value = contact_person
             this.fields.phone.value = phone
+            this.fields.lastUpdateDate.value = last_update_date
+            this.fields.lastUpdateExe.value = last_update_exe
             this.isFormValid()
         },
         isFormInvalid: true,
         validateField(field) {
+            const requiredIfIndex = field.rules.findIndex(rule => rule.includes('requiredIf'))
+            if(requiredIfIndex) {
+                field.rules.splice(requiredIfIndex, 1, `requiredIf:${this.fields.lastUpdateDate.value}`)
+            }
             let res = Iodine.assert(field.value, field.rules);
             field.error = res.valid ? null : res.error;
             this.isFormValid();
@@ -56,6 +83,8 @@ function clientFormData() {
             this.fields.location.value = ""
             this.fields.phone.value = ""
             this.fields.contactPerson.value = ""
+            this.fields.lastUpdateDate.value = null
+            this.fields.lastUpdateExe.value = null
             document.querySelector('input#client-logo').files = new DataTransfer().files
             clearFormErrors(this.fields)
             this.isFormValid()
@@ -67,7 +96,7 @@ function clientFormData() {
             }
             Alpine.store('clients').isLoaded = false
             const formData = new FormData(e.target)
-            
+
             axios.post("api/clients/add_client.php", formData, config)
             .then((res) => {
                     const newClient = res.data
