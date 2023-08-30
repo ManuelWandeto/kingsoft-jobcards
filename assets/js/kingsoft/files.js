@@ -27,9 +27,9 @@ function removeFileFromFileList(filename, inputId) {
     
     input.files = dt.files // Assign the updates list
 }
-async function deleteUploadedFile(path, jobId) {
+async function deleteUploadedFile(name, uploadedBy, jobId) {
     try {
-        const res = await axios.delete('api/files/delete_file.php', {data: {filepath: path, jobId}})
+        const res = await axios.delete('api/files/delete_file.php', {data: {filename: name, uploadedBy, jobId}})
         if (!res.data) {
             throw new Error("unknown error occured")
         }
