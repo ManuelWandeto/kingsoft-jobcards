@@ -1,143 +1,59 @@
 <div class="row">
   <div class="col-md-12">
-    <div class="card jobs-card" id="jobs-table">
+    <div class="card jobs-card" id="jobs-table" x-data="{oldFilters: JSON.parse(JSON.stringify($store.jobs.filters))}">
         <div class="card-header">
             <h4 class="card-title"> All Jobs </h4>
-            <template x-data x-if="!$store.jobs.isLoaded">
+            <template x-data x-if="!$store.jobs.isLoaded && $store.jobs.page === 1">
                 <i class="now-ui-icons loader_refresh spin"></i>
             </template>
-            <template x-data x-cloak x-if="$store.jobs.list.length > 0">
-                <div class="filters" x-data>
-                    <div class="search dropdown">
-                        <i class="now-ui-icons ui-1_zoom-bold"></i>
-                        <input type="text" x-model="$store.jobs.filters.search.value" name="search" placeholder="Search by:">
-                        <button class="dropdown-toggle icon-button" data-toggle="dropdown" data-offset="-10,20"
-                            aria-haspopup="true" aria-expanded="false">
-                        </button>
-                        <span class="search-by" x-text="$store.jobs.filters.search.by?.slice(0, 1).toUpperCase()" x-transition
-                            x-cloak>
-                        </span>
-                        <div class="dropdown-menu dropdown-menu-right">
-                            <div class="form-check">
-                                <input class="form-check-input" x-model="$store.jobs.filters.search.by" name="search_by"
-                                    type="radio" id="search_by_project" value="project" checked>
-                                <label class="form-check-label" for="search_by_project">
-                                    Project
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" x-model="$store.jobs.filters.search.by" name="search_by"
-                                    type="radio" id="search_by_client" value="client">
-                                <label class="form-check-label" for="search_by_client">
-                                    Client
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" x-model="$store.jobs.filters.search.by" name="search_by"
-                                    type="radio" id="search_by_assignee" value="assignee">
-                                <label class="form-check-label" for="search_by_assignee">
-                                    Assignee
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" x-model="$store.jobs.filters.search.by" name="search_by"
-                                    type="radio" id="search_by_supervisor" value="supervisor">
-                                <label class="form-check-label" for="search_by_supervisor">
-                                    Supervisor
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" x-model="$store.jobs.filters.search.by" name="search_by"
-                                    type="radio" id="search_by_location" value="location">
-                                <label class="form-check-label" for="search_by_location">
-                                    Location
-                                </label>
-                            </div>
-                            <div class="dropdown-divider"></div>
-                        </div>
-                    </div>
-                    <div class="dropdown filter-by">
-                        <button class="round-icon-button dropdown-toggle" data-offset="-10,20" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="now-ui-icons design_bullet-list-67"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-right p-3">
-                            <span class="mb-2">Filter by</span>
-                            <div class="dropdown-divider"></div>
-                            <form @submit.prevent>
-                                <div class="form-group mb-2">
-                                    <label for="filter_by_priority" class="mb-2">
-                                        Priority
-                                        <template x-if="$store.jobs.filters.priority">
-                                            <button class="icon-button" @click="$store.jobs.filters.priority = undefined">
-                                                <i class="now-ui-icons ui-1_simple-delete"></i>
-                                            </button>
-                                        </template>
-                                    </label>
-                                    <select class="custom-select" id="filter_by_priority" x-model="$store.jobs.filters.priority">
-                                        <option selected disabled value="">Set priority</option>
-                                        <option value="URGENT">Urgent</option>
-                                        <option value="MEDIUM">Medium</option>
-                                        <option value="LOW">Low</option>
-                                    </select>
-                                </div>
-                                <div class="form-group mb-2">
-                                    <label for="filter_by_status" class="mb-2">
-                                        Status
-                                        <template x-if="$store.jobs.filters.status">
-                                            <button class="icon-button" @click="$store.jobs.filters.status = undefined">
-                                                <i class="now-ui-icons ui-1_simple-delete"></i>
-                                            </button>
-                                        </template>
-                                    </label>
-                                    <select class="custom-select" id="filter_by_status" x-model="$store.jobs.filters.status">
-                                        <option selected disabled value="">Select status</option>
-                                        <option value="REPORTED">Reported</option>
-                                        <option value="SCHEDULED">Scheduled</option>
-                                        <option value="ONGOING">Ongoing</option>
-                                        <option value="OVERDUE">Overdue</option>
-                                        <option value="COMPLETED">Completed</option>
-                                        <option value="CANCELLED">Cancelled</option>
-                                        <option value="SUSPENDED">Suspended</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <div class="form-group">
-                                        <label for="duration_start">From</label>
-                                        <input 
-                                        id="duration_start"
-                                        type="date" 
-                                        class="form-control"
-                                        x-model="$store.jobs.filters.duration.from"
-                                        >
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="duration_end">To</label>
-                                        <input 
-                                        id="duration_end"
-                                        type="date" 
-                                        class="form-control"
-                                        x-model="$store.jobs.filters.duration.to"
-                                        >
-                                    </div>
-                                </div>
-                                <div class="dropdown-divider"></div>
-                                <button class="btn btn-danger" style="width: 100%;" @click="$store.jobs.filters.clearFilters()">
-                                    Clear Filters
-                                </button>
-        
-                            </form>
-                        </div>
-                    </div>
-                </div>
+            <template x-data 
+                x-init="$watch('$store.jobs.filters', (filters)=> {
+                    let hasChanged = filters.search.value !== oldFilters.search.value
+                                ||   filters.priority.join() !== oldFilters.priority.join()
+                                ||   filters.status.join() !== oldFilters.status.join()
+                                ||   filters.tags.join() !== oldFilters.tags.join()
+                                ||   filters.orderBy !== oldFilters.orderBy
+                                ||   filters.duration.from !== oldFilters.duration.from
+                                ||   filters.duration.to !== oldFilters.duration.to
+
+                    if(hasChanged) {
+                        $store.jobs.page = 1
+                        $store.jobs.getJobs()
+                    }
+                    oldFilters = JSON.parse(JSON.stringify(filters))
+                })"
+                x-if="$store.jobs.error != 500"
+            >
+                <?php require_once('filters.php') ?>
             </template>
         </div>
-        <div class="card-body">
-            <div x-data x-show="!($store.jobs.list.length > 0)" id="jobs-error-message" class="error-message">
-                <img src="" alt="" class="error-illustration">
-                <span class="error-description"></span>
+        <template x-if="$store.jobs.filters.tags.length">
+            <div class="filter-tags pt-2 px-3">
+                <template x-for="tagId in $store.jobs.filters.tags" :key="tagId">
+                    <div x-data="{tagData: $store.tags.getTag(tagId)}" :style="{borderColor: tagData.colorcode}">
+                        <span x-text="tagData.label"></span>
+                        <button type="button" class="icon-button" @click= "()=> {
+                            index = $store.jobs.filters.tags.findIndex(t => t == tagId);
+                            $store.jobs.filters.tags.splice(index, 1)
+                        }">
+                            <i style="color: #dc3545;" class="now-ui-icons ui-1_simple-remove"></i>
+                        </button>
+                    </div>
+                </template>
             </div>
-            <template x-data x-cloak x-if="$store.jobs.getJobs()?.length > 0">
-                <table class="table alltime-jobs table-responsive" 
+        </template>
+        <div class="card-body">
+            <template x-if="$store.jobs.error && !$store.jobs.list.length">
+                <div x-data id="jobs-error-message" class="error-message">
+                    <img 
+                        :src="$store.jobs.error.status == 500 ? './assets/img/server_error.svg' : './assets/img/no_data.svg'" 
+                        alt="" class="error-illustration"
+                    >
+                    <span class="error-description" x-text="$store.jobs.error.message"></span>
+                </div>
+            </template>
+            <template x-data x-cloak x-if="$store.jobs.list?.length > 0">
+                <table class="table alltime-jobs table-responsive"
                     :style="{maxHeight: (showJobcardForm || showUserSection) ? '500px' : '800px'}" 
                     x-data
                 >
@@ -190,8 +106,15 @@
                         <th>Actions</th>
                     </thead>
                     <tbody>
-                        <template x-for="job in $store.jobs.getJobs()" :key="index">
-                            <tr>
+                        <template x-for="(job, index) in $store.jobs.list" :key="index">
+                            <tr x-intersect="()=> {
+                                if($store.jobs.list[$store.jobs.list.length - 1].id == job.id) {
+                                    if($store.jobs.has_next_page) {
+                                        $store.jobs.page++
+                                        $store.jobs.getJobs()
+                                    }
+                                }
+                            }">
                                 <td>
                                     <div class="datetime">
                                         <span class="date" x-text="moment(job.created_at).format('YYYY-MM-DD')"></span>
@@ -313,13 +236,21 @@
                                                         </div>
                                                         <div class="modal-body">
                                                             <div class="job-tags">
-                                                                <template x-for="tag in job.tags" :key="tag.id">
-                                                                    <div  
-                                                                        :style="{borderColor: tag.colorcode}"
-                                                                    >
-                                                                        <span x-text="tag.label"></span>
-                                                                    </div>
+                                                                <template x-if="$store.tags.isLoaded">
+                                                                    <template x-for="tagId in job.tags" :key="tagId">
+                                                                        <div
+                                                                            :style="{borderColor: $store.tags.getTag(tagId)?.colorcode ?? 'grey'}"
+                                                                        >
+                                                                            <span 
+                                                                                x-text="$store.tags.getTag(tagId)?.label ?? 'Error loading tag'"
+                                                                            >
+                                                                            </span>
+                                                                        </div>
+                                                                    </template>
                                                                 </template>
+                                                                <span x-show="!$store.tags.isLoaded">
+                                                                    <i class="now-ui-icons loader_refresh spin"></i>
+                                                                </span>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
@@ -436,18 +367,18 @@
                                                             <form action="" @submit.prevent="">
                                                                 <div class="row px-3 row-cols-1">
                                                                     <div class="form-group">
-                                                                        <label for="closing-completion-notes">Completion
+                                                                        <label :for="$id('actions', 'close_', 'completion_notes')">Completion
                                                                             notes</label>
                                                                         <textarea name="closing-completion-notes"
-                                                                            class="form-control" id="closing-completion-notes"
+                                                                            class="form-control" :id="$id('actions', 'close_', 'completion_notes')"
                                                                             rows="40"
                                                                             x-model="fields.completion_notes.value"></textarea>
                                                                     </div>
                                                                     <div class="form-group">
-                                                                        <label for="closing-issues-arising">Issues
+                                                                        <label :for="$id('actions', 'close_', 'issues_arrising')">Issues
                                                                             arrising</label>
                                                                         <textarea name="closing-issues-arising"
-                                                                            class="form-control" id="closing-issues-arising"
+                                                                            class="form-control" :id="$id('actions', 'close_', 'issues_arrising')"
                                                                             rows="40"
                                                                             x-model="fields.issues_arrising.value"></textarea>
                                                                     </div>
@@ -471,6 +402,11 @@
                         </template>
                     </tbody>
                 </table>
+            </template>
+        </div>
+        <div class="card-footer">
+            <template x-if="!$store.jobs.isLoaded && $store.jobs.page !== 1">
+                <i class="now-ui-icons loader_refresh spin"></i>
             </template>
         </div>
     </div>
