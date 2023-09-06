@@ -209,6 +209,7 @@
                                 <th style="min-width: 150px;">Location</th>
                                 <th>Contact</th>
                                 <th>Phone</th>
+                                <th style="min-width: 150px;">Last Update</th>
                                 <template x-if="session.role !== 'USER'">
                                     <th>Actions</th>
                                 </template>
@@ -222,6 +223,15 @@
                                     <td class="text-left" x-text="client.location"></td>
                                     <td class="text-left" x-text="client.contact_person?.trim() || 'N/A'"></td>
                                     <td class="text-left" x-text="client.phone?.trim() || 'N/A'"></td>
+                                    <td class="text-left last-server-update">
+                                        <template x-if="client.last_update_date || client.last_update_exe">
+                                            <div>
+                                                <span class="last-update-date" x-text="client.last_update_date || 'N/A'"></span>
+                                                <span class="last-update-exe" x-text="client.last_update_exe || 'N/A'"></span>
+                                            </div>
+                                        </template>
+                                        <span x-show="!client.last_update_date && !client.last_update_exe">N/A</span>
+                                    </td>
                                     <template x-if="session.role !== 'USER'">
                                         <td class="td-actions text-right" x-id="['client-actions']">
                                             <button type="button" rel="tooltip" title=""
