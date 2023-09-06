@@ -352,8 +352,8 @@
                 </div>
               </template>
           </div>
-          <div class="form-group action-group">
-            <button type="button" class="tags" data-toggle="modal" data-target="#tagsModal">
+          <div class="form-group action-group" @tags-changed = "fields.tags = $event.detail" x-id="['tags-modal']">
+            <button type="button" class="tags" data-toggle="modal" :data-target="'#'+$id('tags-modal')">
               <i class="now-ui-icons shopping_tag-content"></i>
               <span>Tags</span>
             </button>
