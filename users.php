@@ -35,10 +35,15 @@
             </button>
         </div>
         <div class="card-body pt-0">
-            <div x-show="!editMode" x-transition.opacity id="users-error-message" class="error-message">
-                <img src="" alt="" class="error-illustration">
-                <span class="error-description"></span>
-            </div>
+            <template x-if="!editMode && $store.users.error">
+                <div x-transition.opacity id="users-error-message" class="error-message">
+                    <img 
+                        :src="$store.users.error.status == 500 ? './assets/img/server_error.svg' : './assets/img/no_data.svg'" 
+                        alt="" class="error-illustration"
+                    >
+                    <span class="error-description" x-text="$store.users.error.message"></span>
+                </div>
+            </template>
             <form 
                 x-data="{role: ''}" 
                 @submit.prevent="()=> {
@@ -166,7 +171,7 @@
                             <template x-for="user in $store.users.list" :key="user.id">
                                 <tr>
                                     <td class="text-left" x-text="user.username"></td>
-                                    <td class="text-left" x-text="user.email"></td>
+                                    <td class="text-left" x-text="user.email || 'N/A'"></td>
                                     <td class="text-left" x-text="user.phone || 'N/A'"></td>
                                     <td class="text-left" x-text="user.current_location?.trim() || 'N/A'"></td>
                                     <td class="text-left" x-text="user.current_task?.trim() || 'N/A'"></td>

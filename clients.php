@@ -1,7 +1,6 @@
 <div 
         class="card card-tasks" 
-        x-data="{editMode: false, showForm: false, clientdata: {}, ...clientFormData() }" 
-        x-effect="console.log('date value: ', fields.lastUpdateDate.value)"
+        x-data="{editMode: false, showForm: false, clientdata: {}, ...clientFormData()}" 
         style="position: relative;"
         :style = "editMode && {border: '1px solid #E86252'}"
     >
@@ -35,10 +34,15 @@
             </template>
         </div>
         <div class="card-body pt-0">
-            <div x-data x-show="!editMode && !showForm && !($store.clients.list.length > 0)" x-cloak x-transition.opacity id="clients-error-message" class="error-message">
-                <img src="" alt="" class="error-illustration">
-                <span class="error-description"></span>
-            </div>
+            <template x-if="!editMode && !showForm && $store.clients.error && !$store.clients.list.length">
+                <div x-data x-cloak x-transition.opacity id="clients-error-message" class="error-message">
+                    <img 
+                        :src="$store.clients.error.status == 500 ? './assets/img/server_error.svg' : './assets/img/no_data.svg'" 
+                        alt="" class="error-illustration"
+                    >
+                    <span class="error-description" x-text="$store.clients.error.message"></span>
+                </div>
+            </template>
             <form 
                 id="clientForm"
                 action="" 

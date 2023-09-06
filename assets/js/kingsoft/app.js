@@ -1,4 +1,4 @@
-
+// import {computePosition} from 'https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.5.1/+esm';
 function clearFormErrors(fields) {
     Object.values(fields).forEach(field => {
         if (field?.error) {
@@ -20,10 +20,8 @@ function showAlert(className, heading, message, duration=2500) {
     }, duration);
 }
 
-function illustrateError(errorSlotId, illustrationPath, message) {
-    document.getElementById(errorSlotId).classList.toggle('show')
-    const errorIllustraion = document.querySelector(`#${errorSlotId} img.error-illustration`)
-    const errorDescription = document.querySelector(`#${errorSlotId} span.error-description`)
-    errorIllustraion.setAttribute('src', illustrationPath)
-    errorDescription.textContent = message
-}
+
+document.addEventListener('alpine:init', ()=> {
+
+    Alpine.plugin(intersect)
+})

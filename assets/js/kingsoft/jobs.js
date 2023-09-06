@@ -102,7 +102,7 @@ function formdata() {
             this.fields.completion_notes.value = completion_notes?.trim()
             this.fields.issues_arrising.value = issues_arrising?.trim()
             this.fields.files = job.files ?? []
-            this.fields.tags = job.tags?.map(t => t.id) ?? []
+            this.fields.tags = job.tags?.map(t => t) ?? []
 
             this.isFormValid()
         },
