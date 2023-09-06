@@ -5,7 +5,7 @@ require_once('../../db/queries/clients.inc.php');
 require_once('../../utils/respond.php');
 
 try {
-    $client = addClient($conn, $_POST);
+    $client = addClient($pdo_conn, $_POST);
     if (!$client) {
         throw new Exception("no new client returned", 500);
     }
