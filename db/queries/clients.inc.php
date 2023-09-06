@@ -3,7 +3,7 @@ require_once(__DIR__ . '/../functions.inc.php');
 require_once('files.inc.php');
 require_once(__DIR__ . '/../../utils/constants.php');
 define('LOGO_PATH', UPLOAD_PATH . 'client_logos' . DIRECTORY_SEPARATOR);
-function addClient(mysqli $conn, array $client) {
+function addClient(PDO $conn, array $client) {
     if (!isAuthorised(2)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
@@ -21,51 +21,47 @@ function addClient(mysqli $conn, array $client) {
         throw $e;
     }
     $clientName = $client['name'];
-    $clientExists = queryRow($conn, "client exists", "SELECT * FROM jc_clients WHERE `name` = ?;", 's', $clientName);
+    $clientExists = queryRowPdo($conn, "client exists", "SELECT * FROM jc_clients WHERE `name` = ?;", $clientName);
     if ($clientExists) {
         throw new Exception("client with name $clientName already exists", 400);
     }
-    $sql = 'INSERT INTO jc_clients (`name`, email, `contact_person`, `phone`, `location`, `logo`) VALUES (?, ?, ?, ?, ?, ?);';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+    $sql = 
+    'INSERT INTO jc_clients (
+        `name`, 
+        `email`, 
+        `contact_person`, 
+        `phone`, 
+        `location`, 
+        `logo`
+    ) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?);';
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            $clientName, 
+            $client['email'], 
+            $client['contact_person'], 
+            $client['phone'], 
+            $client['location'], 
+            $logo
+        ]);
+        $lastInsertId = $conn->lastInsertId();
+        $getClient = $conn->query("SELECT * FROM jc_clients WHERE id = $lastInsertId");
+
+        $newClient = $getClient->fetch(PDO::FETCH_ASSOC);
+        return $newClient;
+    } catch (PDOException $e) {
+        throw new Exception('Error with Add client query: '.$e->getMessage(), 500);
     }
-    $boundOk = mysqli_stmt_bind_param(
-        $stmt, 
-        'ssssss', 
-        $clientName, 
-        $client['email'], 
-        $client['contact_person'], 
-        $client['phone'], 
-        $client['location'],
-        $logo
-    );
-    if(!$boundOk) {
-        throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing insert client query: ".mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    $lastInsertId = mysqli_insert_id($conn);
-    $lastInsertRow = mysqli_query($conn, "SELECT * FROM jc_clients WHERE id = $lastInsertId");
-    if (!$lastInsertRow) {
-        throw new Exception("Error getting last insert row", 500);
-    }
-    $newClient = mysqli_fetch_assoc($lastInsertRow);
-    if (!$newClient) {
-        throw new Exception("Error getting associative array from last insert row", 500);
-    }
-    return $newClient;
 }
 
-function updateClient(mysqli $conn, array $client) {
+function updateClient(PDO $conn, array $client) {
     if (!isAuthorised(2)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
     $id = $client['id'];
     // check if row with given id exists
-    $oldClient = IdExists($conn, $id, 'jc_clients');
+    $oldClient = IdExistsPdo($conn, $id, 'jc_clients');
     if (!$oldClient) {
         throw new Exception("Client record with id: $id not found", 404);
     }
@@ -91,29 +87,31 @@ function updateClient(mysqli $conn, array $client) {
         }
     }
     // if id exists, perform update
-    $sql = 'UPDATE jc_clients SET `name` = ?, `email` = ?, `contact_person` = ?, `phone` = ?, `location` = ?, `logo` = ? WHERE id = ?;';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
+    $sql = 
+        'UPDATE jc_clients 
+            SET 
+            `name` = ?, 
+            `email` = ?, 
+            `contact_person` = ?, 
+            `phone` = ?, 
+            `location` = ?, 
+            `logo` = ?
+        WHERE id = ?;';
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            $client['name'], 
+            $client['email'], 
+            $client['contact_person'], 
+            $client['phone'], 
+            $client['location'], 
+            $logo, 
+            $id
+        ]);
+        return queryRowPdo($conn, 'get updated client', 'SELECT * FROM `jc_clients` WHERE id = ?;', $id);
+    } catch (PDOException $e) {
+        throw new Exception('Error with Update client query: '.$e->getMessage(), 500);
     }
-    if (!mysqli_stmt_bind_param(
-        $stmt, 
-        'ssssssi', 
-        $client['name'], 
-        $client['email'], 
-        $client['contact_person'], 
-        $client['phone'], 
-        $client['location'], 
-        $logo, 
-        $id
-    )) {
-        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing update client query: ". mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    return queryRow($conn, 'get updated client', 'SELECT * FROM `jc_clients` WHERE id = ?;', 'i', $id);
 }
 function deleteClient(mysqli $conn, int $clientId) {
     if (!isAuthorised(2)) {
