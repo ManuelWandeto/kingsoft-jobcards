@@ -185,6 +185,7 @@ form div.form-group input[type=file] {
     box-sizing: border-box;
     padding: 16px;
 }
+
 @media (min-width: 768px) {
 
     form div.form-group div.client-logo {
@@ -399,12 +400,14 @@ table.persons-list tr {
     height: 60px;
 }
 
+table.persons-list td.last-server-update div,
 table.alltime-jobs div.reporter {
     display: flex;
     flex-direction: column;
     gap: 12px;
     align-items: start;
 }
+table.persons-list td.last-server-update div span.last-update-date,
 form div.form-group div.contact-person > div.contact-name,
 table.alltime-jobs div.reporter span.reporter-name {
     font-family: 'Verdana';
@@ -412,6 +415,7 @@ table.alltime-jobs div.reporter span.reporter-name {
     text-transform: capitalize;
     letter-spacing: .1rem;
 }
+table.persons-list td.last-server-update div span.last-update-exe
 form div.form-group div.contact-person > div.contact-phone,
 table.alltime-jobs div.reporter span.reporter-phone {
     font-family: 'Montserrat';
