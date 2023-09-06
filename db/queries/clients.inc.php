@@ -34,7 +34,7 @@ function addClient(PDO $conn, array $client) {
         `location`, 
         `logo`
     ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?);';
+    VALUES (?, ?, ?, ?, ?, ?);';
     try {
         $stmt = $conn->prepare($sql);
         $stmt->execute([
