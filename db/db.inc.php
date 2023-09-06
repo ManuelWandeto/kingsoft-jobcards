@@ -36,8 +36,17 @@ if($_ENV['APP_ENV'] === 'development') {
         $_ENV['PROD_DB_NAME'], 
         $_ENV['PROD_DB_PORT']
     );
-}
-
-if (!$conn) {
-    respondWith(500, 'DB connection error');
+    $dsn = "mysql:host={$_ENV['PROD_DB_HOST']};dbname={$_ENV['PROD_DB_NAME']};charset=UTF8";
+    try {
+        $pdo_conn = new PDO($dsn, $_ENV['PROD_DB_USER'], $_ENV['PROD_DB_PASS']);
+        $pdo_conn->setAttribute( PDO::ATTR_EMULATE_PREPARES, false );
+        $pdo_conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        if (!$pdo_conn) {
+            throw new Exception("Uncaught exception connecting to db", 500);
+        }
+        
+    } catch (PDOException $e) {
+        respondWith(500, 'PDO:Error connecting to DB: ' . $e->getMessage());
+    }
 }
