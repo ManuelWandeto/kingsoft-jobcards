@@ -64,6 +64,25 @@ function IdExists(
     mysqli_stmt_close($stmt);
     return $result;
 }
+function IdExistsPdo(
+    PDO $conn, 
+    int $id, 
+    string $tableName, 
+    string $idColumn = 'id'
+) {
+    try {
+        $sql = "SELECT * FROM $tableName WHERE $idColumn = ?;";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if($result) {
+            return $result;
+        }
+        return false;
+    } catch (PDOException $e) {
+        throw $e;
+    }
+}
 
 function queryExec( 
     mysqli $conn, 
@@ -114,6 +133,21 @@ function queryRow(
     }
     mysqli_stmt_close($stmt);
     return $result;
+}
+function queryRowPdo(
+    PDO $conn, 
+    string $queryName,
+    string $sql,
+    ...$params
+) {
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // TODO: log exception
+        throw $e;
+    }
 }
 
 function isAuthorised(int $requiredLevel) {
