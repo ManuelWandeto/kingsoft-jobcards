@@ -7,64 +7,110 @@ document.addEventListener('alpine:init', async () => {
                 by: 'project',
                 value: ''
             },
-            priority: undefined,
-            status: undefined,
+            priority: [],
+            status: [
+                'SCHEDULED',
+                'ONGOING',
+                'OVERDUE'
+            ],
+            tags: [],
+            orderBy: 'newest',
             duration: {
                 from: '',
                 to: ''
             },
+            isEmpty() {
+                const {search, priority, status, tags, duration, orderBy} = this
+                if (
+                    !search.value?.trim() && 
+                    !priority.length && 
+                    !status.join() === [
+                        'SCHEDULED',
+                        'ONGOING',
+                        'OVERDUE'
+                    ].join() && 
+                    !tags.length && 
+                    !duration.from &&
+                    !duration.to &&
+                    !orderBy == 'newest'
+                ) {
+                    return true;
+                }
+                return false
+            },
             clearFilters() {
+                this.orderBy = 'newest'
                 this.search.by = 'project',
                 this.search.value = ''
-                this.priority = undefined
-                this.status = undefined
+                this.priority = []
+                this.status = [
+                    'SCHEDULED',
+                    'ONGOING',
+                    'OVERDUE'
+                ]
+                this.tags = []
                 this.duration.from = ''
                 this.duration.to = ''
             }
         },
-        applyJobFilters(jobs) {
-            let results = jobs
-            filters = this.filters;
-            if (filters.search.value.trim()) {
-                if (filters.search.by === 'client') {
-                    results = results.filter(j => {
-                        let client = Alpine.store('clients').getClient(j.client_id)
-                        return client?.name.toLowerCase().includes(filters.search.value.toLowerCase()) ?? false
-                    })
-                }
-                else if (filters.search.by === 'assignee' || filters.search.by === 'supervisor') {
-                    if (filters.search.value?.trim().toLowerCase() === 'null') {
-                        results = results.filter(j => filters.search.by === 'assignee' ? !j.assigned_to : !j.supervised_by)
-                    } else {
-                        results = results.filter(j => {
-                            let user = Alpine.store('users').getUser(filters.search.by === 'assignee' ? j.assigned_to : j.supervised_by)
-                            return user?.username.toLowerCase().includes(filters.search.value.toLowerCase()) ?? false
-                        })
-                    }
-                }
-                else {
-                    results = results.filter(j => j[filters.search.by].toLowerCase().includes(filters.search.value.toLowerCase()))
-                }
-            }
-            if(filters.priority?.trim()) {
-                results = results.filter(j => j.priority === filters.priority)
-            }
-            if(filters.status?.trim()) {
-                results = results.filter(j => j.status === filters.status)
-            }
-            if(filters.duration.from && filters.duration.to) {
-                results = results.filter(j => {
-                    return moment(j.end_date).isBetween(filters.duration.from, filters.duration.to, 'hour')
-                })
-            }
-            return results
-        },
+        page: 1,
+        has_next_page: false,
         isLoaded: false,
-        getJobs() {
-            return this.applyJobFilters(this.list)
+        error: null,
+        async getJobs() {
+            this.isLoaded = false
+            try {
+                const {search, priority, status, tags, duration, orderBy} = this.filters
+                const res = await axios.get("api/jobs/get_jobs.php", {
+                    params: {
+                        page: this.page,
+                        ...(search.value.trim() && {['search-by']: search.by, query: search.value}),
+                        ...(priority.length && {priority: priority.join(',')}),
+                        ...(status.length && {status: status.join(',')}),
+                        ...(tags.length && {tags: tags.join(',')}),
+                        ...(duration.from && {from: duration.from}),
+                        ...(duration.to && {to: duration.to}),
+                        ['order-by']: orderBy
+                    }
+                })
+
+                const jobs = res.data.jobs
+                this.has_next_page = res.data.has_next_page
+                if(!jobs?.length) {
+                    if(this.filters.isEmpty()) {
+                        this.error = {
+                            status: 204,
+                            message: 'You have no jobs, start adding some'
+                        }
+                        this.list = []
+                        return
+                    }
+                    this.error = {
+                        status: 404,
+                        message: 'No jobs found matching your search'
+                    }
+                    this.list = []
+                }
+                this.list = this.page > 1 ? [...this.list, ...jobs] : jobs
+            } catch (error) {
+                this.error = {
+                    status: error.response?.status ?? 500,
+                    message: "Internal server error occured"
+                }
+                this.list = []
+            } finally {
+                if(this.list.length) {
+                    this.error = null
+                }
+                this.isLoaded = true
+                return
+            }
         },
         addJob(job) {
             this.list.unshift({...job})
+            if(this.list.length) {
+                this.error = null
+            }
         },
         editJob(jobId, fields) {
             index = this.list.findIndex(j => j.id == jobId);
@@ -81,12 +127,41 @@ document.addEventListener('alpine:init', async () => {
 
     Alpine.store('clients', {
         list: [],
+        error: null,
         isLoaded: false,
         getClient(id) {
             return this.list.find(c => c.id == id)
         },
+        async getClients() {
+            // Get clients
+            try {
+                const res = await axios.get("api/clients/get_clients.php");
+                const clients = res.data
+                this.list = clients;
+                if(clients?.length === 0) {
+                    this.error = {
+                        status: 204,
+                        message: "Currently no clients, start adding some"
+                    }
+                }
+            } catch (error) {
+                this.error = {
+                    status: error.response?.status ?? 500,
+                    message: "Internal server error occured"
+                }
+            } finally {
+                if(this.list.length) {
+                    this.error = null
+                }
+                this.isLoaded = true
+                return
+            }
+        },
         addClient(client) {
             this.list.push({...client})
+            if(this.list.length) {
+                this.error = null
+            }
         },
         editClient(clientId, fields) {
             index = this.list.findIndex(c => c.id == clientId);
@@ -104,6 +179,25 @@ document.addEventListener('alpine:init', async () => {
     Alpine.store('users', {
         list: [],
         isLoaded: false,
+        error: null,
+        async getUsers() {
+            try {
+                const res = await axios.get("api/users/get_users.php")
+                const users = res.data
+                this.list = users;
+            } catch (error) {
+                this.error = {
+                    status: error.response?.status ?? 500,
+                    message: "Internal server error occured"
+                }
+            } finally {
+                if(this.list.length) {
+                    this.error = null
+                }
+                this.isLoaded = true
+                return null
+            }
+        },
         getUser(id) {
             return this.list.find(u => u.id == id)
         },
@@ -116,6 +210,9 @@ document.addEventListener('alpine:init', async () => {
         },
         addUser(user) {
             this.list.push({...user})
+            if(this.list.length) {
+                this.error = null
+            }
         },
         deleteUser(userId) {
             index = this.list.findIndex(u => u.id == userId);
@@ -126,6 +223,32 @@ document.addEventListener('alpine:init', async () => {
     Alpine.store('tags', {
         list: [],
         isLoaded: false,
+        error: null,
+        async getTags() {
+            try {
+                const res = await axios.get("api/tags/get_tags.php")
+                const tags = res.data
+                this.list = tags;
+                if(!tags?.length) {
+                    this.error = {
+                        status: 204,
+                        message: "Currently no tags, start adding some"
+                    }                
+                }
+            } catch (error) {
+                this.error = {
+                    status: error.response?.status ?? 500,
+                    message: "Internal server error occured"
+                }
+                // window.dispatchEvent(new CustomEvent('tags-error', {detail: e.response.data} ))
+            } finally {
+                if(this.list.length) {
+                    this.error = null
+                }
+                this.isLoaded = true;
+                return
+            }
+        },
         getTag(id) {
             return this.list.find(t => t.id == id)
         },
@@ -138,6 +261,9 @@ document.addEventListener('alpine:init', async () => {
         },
         addTag(tag) {
             this.list.push({...tag})
+            if(this.list.length) {
+                this.error = null
+            }
         },
         deleteTag(tagId) {
             index = this.list.findIndex(t => t.id == tagId);
@@ -145,55 +271,11 @@ document.addEventListener('alpine:init', async () => {
         }
     })
 
-    // load data async into stores
-    try {
-        const res = await axios.get("api/jobs/get_jobs.php")
-        const jobs = res.data
-        Alpine.store('jobs').list = jobs
-        if(jobs?.length === 0) {
-            illustrateError('jobs-error-message', './assets/img/no_data.svg', 'You have no jobs, start adding some')
-        }
-    } catch (error) {
-        illustrateError('jobs-error-message', './assets/img/server_error.svg', "Internal server error occured")
-    } finally {
-        Alpine.store('jobs').isLoaded = true
-    }
-    
-    try {
-        const res = await axios.get("api/clients/get_clients.php");
-        const clients = res.data
-        Alpine.store('clients').list = clients;
-        if(clients?.length === 0) {
-            illustrateError('clients-error-message', './assets/img/no_data.svg', 'Currently no clients, start adding some')
-        }
-    } catch (error) {
-        illustrateError('clients-error-message', './assets/img/server_error.svg', "Internal server error occured")
-    } finally {
-        Alpine.store('clients').isLoaded = true
-    }
-    
-    try {
-        const res = await axios.get("api/users/get_users.php")
-        const users = res.data
-        Alpine.store('users').list = users;
-    } catch (error) {
-        illustrateError('users-error-message', './assets/img/server_error.svg', "Internal server error occured")
-    } finally {
-        Alpine.store('users').isLoaded = true
-    }
+    Alpine.store('jobs').getJobs();
 
-    try {
-        const res = await axios.get("api/tags/get_tags.php")
-        const tags = res.data
-        Alpine.store('tags').list = tags;
-        if(!tags?.length) {
-            illustrateError('tags-error-message', './assets/img/no_data.svg', 'Currently no tags, start adding some')
-        }
-        
-    } catch (error) {
-        illustrateError("tags-error-message", './assets/img/server_error.svg', `Internal error occured`)
-        window.dispatchEvent(new CustomEvent('tags-error', {detail: e.response.data} ))
-    } finally {
-        Alpine.store('tags').isLoaded = true;
-    }
+    Alpine.store('clients').getClients();
+    
+    Alpine.store('tags').getTags();
+
+    Alpine.store('users').getUsers();
 })

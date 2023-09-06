@@ -51,7 +51,9 @@ div.card form label {
     color: #6e6e6e !important;
 }
 
-div.card form input, div.card form select  {
+div.modal div.modal-content input,
+div.card form input, 
+div.card form select  {
     box-sizing: border-box;
     height: 40px;
     font-size: 1rem;
@@ -76,6 +78,22 @@ div.card form input::placeholder {
 
 form select.custom-select {
     border-radius: 30px;
+}
+
+div.custom-dropdown > div.dropdown-content{
+    position: absolute;
+    padding: 12px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: max-content;
+    /* width: max-content; */
+    background: white;
+    z-index: 99999;
+    box-shadow: 1px 2px 26px 0px rgba(41,39,39,0.67);
+    -webkit-box-shadow: 1px 2px 26px 0px rgba(41,39,39,0.67);
+    -moz-box-shadow: 1px 2px 26px 0px rgba(41,39,39,0.67);
 }
 
 div.clients.dropdown {
@@ -228,7 +246,7 @@ div.selected-files div.file-info span.size {
     font-weight: 600;
 }
 
-form div.action-group div.tags {
+div.modal-content div.modal-body div.tags {
     max-height: 300px;
     overflow-y: auto;
 }
@@ -249,16 +267,17 @@ form div.action-group button.tags {
     transition: all .15s ease-in;
 }
 
-div.action-group div.form-check label {
+div.modal-content div.modal-body div.form-check label {
     display: flex;
     align-items: center;
 }
-div.action-group div.modal-footer {
+
+div.modal-content div.modal-footer {
     display: flex;
     justify-content: space-between;
 }
 
-div.tag-preview {
+div.modal div.modal-content div.tag-preview {
     height: 80px;
     display: flex;
     align-items: center;
@@ -266,28 +285,28 @@ div.tag-preview {
     background-color: lightgray;
 }
 
-div.action-group  div.color-label {
+div.modal div.modal-content div.color-label {
     /* flex: 1; */
     border-radius: 4px;
     padding: 6px;
 }
-div.action-group div.color-label span {
+div.modal div.modal-content div.color-label span {
     background-color: white;
     padding: 4px;
     border-radius: 2px;
     color: rgb(26, 26, 26);
 }
 
-div.action-group div.form-check label div.color-label {
+div.modal div.modal-content div.form-check label div.color-label {
     flex: 2;
 }
-div.action-group div.tag-preview div.color-label {
+div.modal div.modal-content div.tag-preview div.color-label {
     min-width: 200px;
     padding: 8px;
 }
 
-div.action-group div.form-check label.form-check-label span.form-check-sign::before,
-div.action-group div.form-check label.form-check-label span.form-check-sign::after {
+div.form-check label.form-check-label span.form-check-sign::before,
+div.form-check label.form-check-label span.form-check-sign::after {
     top: 50%;
     transform: translateY(-50%);
 }
@@ -296,11 +315,13 @@ form div.action-group button.tags i {
     transform: rotate(-90deg);
 }
 
+div#jobs-table div.filter-tags,
 form div.job-tags {
     overflow: auto;
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
+div#jobs-table div.filter-tags,
 form div.job-tags::-webkit-scrollbar {
     display: none;
 }
@@ -310,6 +331,7 @@ td div.job-tags {
     max-height: 300px;
 }
 
+div#jobs-table div.filter-tags,
 td div.job-tags,
 form div.job-tags {
     display: flex;
@@ -317,7 +339,7 @@ form div.job-tags {
     overflow-y: auto;
     flex-wrap: wrap;
 }
-
+div#jobs-table div.filter-tags > div,
 td div.job-tags > div,
 form div.job-tags > div {
     flex-shrink: 0;
@@ -328,9 +350,11 @@ form div.job-tags > div {
     align-items: center;
     border-radius: 12px;
 }
+
 td div.job-tags > div {
     padding: 4px 12px;
 }
+div#jobs-table div.filter-tags > div,
 form div.job-tags > div {
     padding: 4px 6px 4px 12px;
     gap: 8px;
@@ -532,10 +556,33 @@ table td div.job-actions {
     gap: 12px;
 }
 
+div.filters div.filter-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+div.filters button.filter-button {
+    padding: 10px 22px;
+    border: none;
+    outline: none;
+    background: none;
+    flex: 1;
+}
+div.filters div.filter-action button.icon-button i {
+    font-size: 1rem;
+    color: rgb(211, 43, 43);
+    display: flex;
+    align-items: center;
+}
+
+div#jobs-table div.filter-tags button.icon-button,
 div.attachments a.icon-button,
 div.sidebar button.icon-button,
 form button.icon-button,
 div.filters div.search button.icon-button,
+div.modal div.modal-content button.icon-button,
 div.card button.round-icon-button,
 table td div.job-actions button.icon-button {
     border: none;
@@ -569,28 +616,31 @@ div.row > div div.jobs-card div.card-header div.filters div.search > i {
 }
 div.row > div div.jobs-card div.card-header div.filters div.search > input {
     width: 100%;
-    padding: 8px 42px 8px 32px;
+    padding: 8px 48px 8px 32px;
     border: 1.4px solid #181818;
     border-radius: 30px;
     appearance: none;
     -webkit-appearance: none;
     outline: none;
 }
-div.row > div div.jobs-card div.card-header div.filters div.search > button.icon-button {
+div.row > div div.jobs-card div.card-header div.filters div.search > a.dropdown-toggle {
     position: absolute;
-    right: 8px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    font-size: 1.2rem;
+}
+div.row > div div.jobs-card div.card-header div.filters div.search > a {
+    color: rgba(95, 158, 160, 0.877);
 }
 div.filters div.search span.search-by {
     padding: 4px;
     background-color: cadetblue;
     color: white;
     font-size: 12px;
-    position: absolute;
-    right: 24px;
-    top: 50%;
-    transform: translateY(-50%);
     border-radius: 16px;
 
 }
@@ -599,6 +649,7 @@ div.filters div.search div.dropdown-menu {
 }
 div.filters div.search .form-check .form-check-label {
     padding-left: 0;
+    font-size: .875rem;
 }
 
 div.filters div.filter-by label {
@@ -619,9 +670,6 @@ div.card div.card-header button.round-icon-button {
 }
 
 div.card .card-body div.error-message {
-    display: none;
-}
-div.card .card-body div.error-message.show {
     display: flex;
     height: 300px;
     width: 100%;
@@ -679,6 +727,7 @@ div.page-options button.btn.show {
         justify-content: space-between;
         width: 92%;
     }
+    div#jobs-table div.filter-tags,
     div#jobcard-form form div.job-tags {
         padding-top: 12px;
     }

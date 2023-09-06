@@ -136,60 +136,167 @@ function addJob(mysqli $conn, array $jobData) {
         $newJob['files'] = $files;
     }
     if($newJob['tags']) {
-        $tagIdsArray = array_map('intval', explode(',', $newJob['tags']));
-        $tagsArray = [];
-        for ($i=0; $i < count($tagIdsArray); $i++) { 
-            $tagsArray[] = getTagInfo($conn, $tagIdsArray[$i]);
-        }
-        $newJob['tags'] = $tagsArray;
+        $newJob['tags'] =  explode(',', $newJob['tags']);
     }
     return $newJob;
 }
-function getJobs(mysqli $conn) {
+function getJobs(PDO $conn, array $filters) {
     // run update_jobcard_statuses() stored procedure
-    if(!mysqli_query($conn, 'CALL update_jobcard_statuses();')) {
+    if(!$conn->query('CALL update_jobcard_statuses();')->execute()) {
         throw new Exception("Error running jobcards maintenance ", 500);
     }
+    // TODO: Join jobcards with tags to return tag info instead of running separate queries or loading all tags on frontend at once
+    $filtersPlaceholder = '';
+    $queryParams = array();
+    $orderBy = $filters['order-by'] == 'newest' ? 'DESC' : 'ASC';
+    if(isset($filters['search-by']) && isset($filters['query']) && strlen($filters['query'])) {
+        switch ($filters['search-by']) {
+            case 'project':
+                $filtersPlaceholder .= ' ' . "WHERE MATCH(j.`project`) AGAINST(:query IN BOOLEAN MODE)";
+                $queryParams[':query'] = "'+*{$filters['query']}*'";
+                break;
+            case 'client':
+                $filtersPlaceholder .= ' ' . "WHERE c.`name` LIKE CONCAT('%', :query, '%')";
+                $queryParams[':query'] = $filters['query'];        
+                break;
+            case 'assignee':
+                $filtersPlaceholder .= ' ' . "WHERE MATCH(w.`username`) AGAINST(:query IN BOOLEAN MODE)";
+                $queryParams[':query'] = "'+*{$filters['query']}*'";
+                break;
+            case 'supervisor':
+                $filtersPlaceholder .= ' ' . "WHERE MATCH(s.`username`) AGAINST(:query IN BOOLEAN MODE)";
+                $queryParams[':query'] = "'+*{$filters['query']}*'";
+                break;
+            case 'location':
+                $filtersPlaceholder .= ' ' . "WHERE MATCH(j.`location`) AGAINST(:query IN BOOLEAN MODE)";
+                $queryParams[':query'] = "'+*{$filters['query']}*'";
+                break;
+            case 'description':
+                $filtersPlaceholder .= ' ' . "WHERE MATCH(j.`description`) AGAINST(:query IN BOOLEAN MODE)";
+                $queryParams[':query'] = "'+*{$filters['query']}*'";
+                break;
+            default:
+                throw new Exception("Invalid search-by parameter", 400);
+        }
+    }
 
-    $results = mysqli_query(
-        $conn, 
-        "
-        SELECT 
-            j.id, 
-            j.project, 
-            j.client_id,
-            j.priority,
-            j.assigned_to,
-            j.supervised_by,
-            j.reported_by,
-            j.reporter_contacts,
-            j.description,
-            j.`location`,
-            j.status,
-            j.start_date,
-            j.end_date,
-            j.completion_notes,
-            j.issues_arrising,
-            GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
-            GROUP_CONCAT(DISTINCT t.tag_id) as tags,
-            j.created_at
-        FROM jc_jobcards as j
-        LEFT JOIN jc_attachments as a
-        ON j.id = a.jobcard_id
-        LEFT JOIN jc_jobcard_tags as t
-        ON j.id = t.jobcard_id
-        GROUP BY j.id
-        ORDER BY priority DESC, status DESC, created_at DESC;
-        "
-    );
+    if(isset($filters['priority']) && strlen(trim($filters['priority']))) {
+        $selectedPriorities = explode(',' , $filters['priority']);
+        $priorityKeys = [];
+        for ($i=0; $i < count($selectedPriorities); $i++) { 
+            $key = ':pr_'.$i;
+            $priorityKeys[] = $key;
+            $queryParams[$key] = $selectedPriorities[$i];
+        }
+        $params = implode(',', $priorityKeys);
+        $filtersPlaceholder .= $filtersPlaceholder ? "AND j.`priority` IN ($params)" : "WHERE j.`priority` IN ($params)";
+    }
+    if(isset($filters['status']) && strlen(trim($filters['status']))) {
+        $selectedStatuses = explode(',', $filters['status']);
+        $statusKeys = [];
+        for ($i=0; $i < count($selectedStatuses); $i++) { 
+            $key = ':st_'.$i;
+            $statusKeys[] = $key;
+            $queryParams[$key] = $selectedStatuses[$i];
+        }
+        $params = implode(',', $statusKeys);
+        $filtersPlaceholder .= $filtersPlaceholder ? "AND j.`status` IN ($params)" : "WHERE j.`status` IN ($params)";
+    }
+    if(isset($filters['tags']) && strlen(trim($filters['tags']))) {
+        $selectedTags = explode(',', $filters['tags']);
+        $tagKeys = [];
+        for ($i=0; $i < count($selectedTags); $i++) { 
+            $key = ':tg_'.$i;
+            $tagKeys[] = $key;
+            $queryParams[$key] = $selectedTags[$i];
+        }
+        $params = implode(',', $tagKeys);
+        $filtersPlaceholder .= $filtersPlaceholder ? "AND t.`tag_id` IN ($params)" : "WHERE t.`tag_id` IN ($params)";
+    }
+    if(isset($filters['from']) && !isset($filters['to'])) {
+        $conjunction = trim($filtersPlaceholder) ? 'AND' : 'WHERE';
+        
+        $filtersPlaceholder .= "$conjunction j.`end_date` > :due_from";
+
+        $queryParams['due_from'] = $filters['from'];
+    }
+    if(!isset($filters['from']) && isset($filters['to'])) {
+        $conjunction = trim($filtersPlaceholder) ? 'AND' : 'WHERE';
+
+        $filtersPlaceholder .= "$conjunction j.`end_date` < :due_till";
+
+        $queryParams['due_till'] = $filters['to'];
+    }
+    if(isset($filters['from']) && isset($filters['to'])) {
+        $conjunction = trim($filtersPlaceholder) ? 'AND' : 'WHERE';
+
+        $filtersPlaceholder .= "$conjunction j.`end_date` BETWEEN :due_from AND :due_till";
+
+        $queryParams['due_from'] = $filters['from'];
+        $queryParams['due_till'] = $filters['to'];
+    }
+    $pagesize = $filters['pagesize'] ?? 30;
+    $queryParams['limit'] = $pagesize + 1;
+
+    $page = $filters['page'] ?? 1;
+    $offset = $pagesize * ($page - 1);
+    $queryParams['offset'] = $offset;
+
+    $sql = 
+    "
+    SELECT 
+        j.id, 
+        j.project, 
+        j.client_id,
+        j.priority,
+        j.assigned_to,
+        j.supervised_by,
+        j.reported_by,
+        j.reporter_contacts,
+        j.description,
+        j.`location`,
+        j.status,
+        j.start_date,
+        j.end_date,
+        j.completion_notes,
+        j.issues_arrising,
+        GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
+        GROUP_CONCAT(DISTINCT t.tag_id) as tags,
+        j.created_at
+    FROM jc_jobcards as j
+    LEFT JOIN jc_attachments as a
+    ON j.id = a.jobcard_id
+    LEFT JOIN jc_jobcard_tags as t
+    ON j.id = t.jobcard_id
+    INNER JOIN jc_clients as c
+    ON j.client_id = c.id
+    LEFT JOIN jc_users as w
+    ON j.assigned_to = w.id
+    LEFT JOIN jc_users as s
+    ON j.supervised_by = s.id
+    $filtersPlaceholder
+    GROUP BY j.id
+    ORDER BY priority DESC, status DESC, created_at $orderBy
+    LIMIT :limit
+    OFFSET :offset
+    ;
+    ";
+    try {
+        
+        $stmt = $conn->prepare($sql);
+    
+        $stmt->execute($queryParams);
+    } catch (PDOException $e) {
+        throw new Exception('Error executing get jobs query: '.$e->getMessage(), 500);
+    }
+
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     $jobs = [];
-    if (!$results) {
-        throw new Exception("Error getting jobs", 500);
+    if (!count($results)) {
+        return ['jobs' => []];
     }
-    if (mysqli_num_rows($results) === 0) {
-        return $jobs;
-    }
-    while ($row = mysqli_fetch_assoc($results)) {
+    foreach ($results as $row) {
         if($row['files']) {
             $files = [];
             $paths = explode(',', $row['files']);
@@ -199,15 +306,18 @@ function getJobs(mysqli $conn) {
                     $files[] = getFileInfo($filepath);
                 } catch (Exception $e) {
                     if($e->getCode() == 404) {
-                        queryExec(
-                            $conn, 
-                            'Delete attachment', 
-                            "DELETE FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;",
-                            'isi',
-                            $row['id'],
-                            basename($filepath),
-                            extract_user_id($filepath)
+                        $deleteStmt = $conn->prepare(
+                            "DELETE FROM `jc_attachments` 
+                            WHERE `jobcard_id` = :job_id 
+                            AND `file_name` = :file_name 
+                            AND `uploaded_by` = :uploaded_by;"
                         );
+                        $deleteStmt->bindParam(':job_id', $row['id'], PDO::PARAM_INT);
+                        $deleteStmt->bindValue(':file_name', basename($filepath));
+                        $deleteStmt->bindValue(':uploaded_by', extract_user_id($filepath), PDO::PARAM_INT);
+                        if(!$deleteStmt->execute()) {
+                            // TODO: log error in file
+                        }
                         continue;
                     }
                     throw $e;
@@ -216,17 +326,14 @@ function getJobs(mysqli $conn) {
             $row['files'] = $files;
         }
         if($row['tags']) {
-            $tagIdsArray = array_map('intval', explode(',', $row['tags']));
-            $tagsArray = [];
-            for ($i=0; $i < count($tagIdsArray); $i++) { 
-                $tagsArray[] = getTagInfo($conn, $tagIdsArray[$i]);
-            }
-            $row['tags'] = $tagsArray;
+            $row['tags'] = explode(',', $row['tags']);
         }
         $jobs[] = $row;
     }
-
-    return $jobs;
+    if(!(count($results) < $pagesize + 1)) {
+        return ["jobs" => $jobs, "has_next_page" => true];
+    }
+    return ["jobs" => $jobs];
 }
 function updateJob(mysqli $conn, array $job) {
     $filenames = [];
@@ -410,12 +517,7 @@ function updateJob(mysqli $conn, array $job) {
         $updatedJob['files'] = $files;
     }
     if($updatedJob['tags']) {
-        $tagIdsArray = array_map('intval', explode(',', $updatedJob['tags']));
-        $tagsArray = [];
-        for ($i=0; $i < count($tagIdsArray); $i++) { 
-            $tagsArray[] = getTagInfo($conn, $tagIdsArray[$i]);
-        }
-        $updatedJob['tags'] = $tagsArray;
+        $updatedJob['tags'] =  explode(',', $updatedJob['tags']);
     }
     return $updatedJob;
 }
