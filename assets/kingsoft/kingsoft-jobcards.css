@@ -185,7 +185,36 @@ form div.form-group input[type=file] {
     box-sizing: border-box;
     padding: 16px;
 }
+div.form-group.search {
+    position: relative;
+    width: 40%;
+    max-width: 300px;
 
+}
+div.form-group.search input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #E3E3E3;
+    border-radius: 4px;
+    padding: 0 2rem 0 1rem;
+    appearance: none;
+    outline: none;
+    transition: all .2s ease-in;
+}
+div.form-group.search i {
+    transition: all .2s ease-in;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+}
+div.form-group.search input:focus {
+    border: 1px solid #fd7e14;
+}
+div.form-group.search input:focus + i {
+    color: #fd7e14;
+}
 @media (min-width: 768px) {
 
     form div.form-group div.client-logo {
