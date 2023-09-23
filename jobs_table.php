@@ -285,7 +285,8 @@
                                                             </button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <div class="container" x-text="job.completion_notes.trim()">
+                                                            <div class="container">
+                                                                <pre x-text="job.completion_notes.trim()"></pre>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
@@ -320,7 +321,8 @@
                                                             </button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <div class="container" x-text="job.issues_arrising.trim()">
+                                                            <div class="container">
+                                                                <pre x-text="job.issues_arrising.trim()"></pre>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
