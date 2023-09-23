@@ -144,7 +144,7 @@ function formdata() {
             // TODO: clear selected files if any
             document.querySelector('input#files').files = new DataTransfer().files
             this.fields.files = []
-            this.fields.tags = []
+            this.fields.tags.splice(0, this.fields.tags.length)
             this.isFormValid()
         },
         submit(e) {
