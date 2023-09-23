@@ -70,7 +70,7 @@
                         <th style="min-width: 150px;">
                             Reporter
                         </th>
-                        <th style="min-width: 240px;">
+                        <th style="min-width: 300px;">
                             Description
                         </th>
                         <th>
@@ -142,7 +142,7 @@
                                     </template>
                                     <span x-show="!job.reported_by?.trim() && !job.reporter_contacts?.trim()">N/A</span>
                                 </td>
-                                <td x-text="job.description"></td>
+                                <td><pre x-text="job.description"></pre></td>
                                 <td x-text="job.priority" :class="job.priority.toLowerCase()"></td>
                                 <td x-text="$store.users.getUser(job.assigned_to)?.username || 'Null'"></td>
                                 <td x-text="$store.users.getUser(job.supervised_by)?.username || 'Null'"></td>
