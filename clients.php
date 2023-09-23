@@ -1,11 +1,14 @@
 <div 
         class="card card-tasks" 
-        x-data="{editMode: false, showForm: false, clientdata: {}, ...clientFormData()}" 
+        x-data="{searchInput: '', editMode: false, showForm: false, clientdata: {}, ...clientFormData()}" 
         style="position: relative;"
         :style = "editMode && {border: '1px solid #E86252'}"
     >
-        <div class="card-header ">
-            <h5 class="card-category mb-1">Clients</h5>
+        <div class="card-header">
+            <div class="form-group search">
+                <input type="text" placeholder="search clients" x-model="searchInput">
+                <i class="now-ui-icons ui-1_zoom-bold"></i>
+            </div>
             <div style="display: flex; gap: 12px; align-items: center;">
                 <h4 class="card-title">Registered clients</h4>
                 <template x-data x-if="!$store.clients.isLoaded">
@@ -216,7 +219,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="client in $store.clients.list">
+                            <template x-for="client in $store.clients.list.filter(c => c.name.toLowerCase().includes(searchInput.toLowerCase()))">
                                 <tr>
                                     <td class="text-left" x-text="client.name"></td>
                                     <td class="text-left" x-text="client.email?.trim() || 'N/A'"></td>
