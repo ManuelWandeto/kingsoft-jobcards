@@ -1,69 +1,19 @@
 <?php
 session_start();
 require_once(__DIR__ . '/../utils/constants.php');
-function uidExists(mysqli $conn, string $username, string $email) {
+
+function uidExistsPdo(PDO $conn, string $username, string $email) {
     $sql = 'SELECT * FROM `jc_users` WHERE `username` = ? OR `email` = ?;';
-    $stmt = mysqli_stmt_init($conn);
-
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        redirect('../Login/custom-login.php?error=internal+error');
+    $stmt = $conn->prepare($sql);
+    // redirect('../Login/custom-login.php?error=internal+error');
+    $stmt->execute([$username, $email]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    if($result) {
+        return $result;
     }
-    mysqli_stmt_bind_param($stmt, 'ss', $username, $email);
-
-    if(!mysqli_stmt_execute($stmt)) {
-        redirect('../Login/custom-login.php?error=internal+error');
-    }
-    $results = mysqli_stmt_get_result($stmt);
-    $result = false;
-    $row = mysqli_fetch_assoc($results);
-    if($row) {
-        $result = $row;
-    } else {
-        $result = false;
-    }
-    mysqli_stmt_close($stmt);
-    return $result;
+    return false;
 }
 
-/**
- * Summary of IdExists
- * @param mysqli $conn
- * @param int $id
- * @param string $tableName
- * @param string $idColumn
- * @throws \Exception
- * @return array|bool
- */
-function IdExists(
-    mysqli $conn, 
-    int $id, 
-    string $tableName, 
-    string $idColumn = 'id'
-) {
-    $sql = "SELECT * FROM $tableName WHERE $idColumn = ?;";
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param($stmt, 'i', $id)) {
-        throw new Exception("Error binding parameters: ".mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing get record by Id query: ".mysqli_stmt_error($stmt), 500);
-    }
-
-    $result = mysqli_stmt_get_result($stmt);
-    if(!$result) {
-        throw new Exception("Error getting query results: ".mysqli_stmt_error($stmt), 500);
-    }
-    $record = mysqli_fetch_assoc($result);
-    $result = false;
-    if (is_array($record)) {
-        $result = $record;
-    }
-    mysqli_stmt_close($stmt);
-    return $result;
-}
 function IdExistsPdo(
     PDO $conn, 
     int $id, 
@@ -83,71 +33,15 @@ function IdExistsPdo(
         throw $e;
     }
 }
-
-function queryExec( 
-    mysqli $conn, 
-    string $queryName,
-    string $sql,
-    string $paramTypes,
-    ...$params
-) {
-    $stmt = mysqli_stmt_init($conn);
-    if (!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing $queryName query: ".mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param($stmt, $paramTypes, ...$params)) {
-        throw new Exception("Error binding params to $queryName query: ".mysqli_stmt_error($stmt), 400);
-    }
-    if (!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing $queryName query: ".mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    return true;
-}
-function queryRow(
-    mysqli $conn, 
-    string $queryName,
-    string $sql,
-    string $paramTypes,
-    ...$params
-) {
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("$queryName Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param($stmt, $paramTypes, ...$params)) {
-        throw new Exception("Error binding parameters to $queryName: ".mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing $queryName query: ".mysqli_stmt_error($stmt), 500);
-    }
-
-    $result = mysqli_stmt_get_result($stmt);
-    if(!$result) {
-        throw new Exception("Error getting $queryName results: ".mysqli_stmt_error($stmt), 500);
-    }
-    $record = mysqli_fetch_assoc($result);
-    $result = false;
-    if ($record) {
-        $result = $record;
-    }
-    mysqli_stmt_close($stmt);
-    return $result;
-}
 function queryRowPdo(
     PDO $conn, 
     string $queryName,
     string $sql,
     ...$params
 ) {
-    try {
-        $stmt = $conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        // TODO: log exception
-        throw $e;
-    }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 function isAuthorised(int $requiredLevel) {
