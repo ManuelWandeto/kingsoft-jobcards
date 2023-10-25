@@ -179,7 +179,7 @@
                 <div class="form-group">
                     <label for="order-by">Order-by</label>
                     <select class="custom-select" x-model="$store.jobs.filters.orderBy">
-                        <option selected value="newest">Newest</option>
+                        <option selected value="newest" selected>Newest</option>
                         <option value="oldest">Oldest</option>
                     </select>
                 </div>
