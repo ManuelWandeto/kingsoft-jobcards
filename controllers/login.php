@@ -3,6 +3,7 @@
 require_once('../utils/redirect.php');
 require_once('../db/db.inc.php');
 require_once('../db/functions.inc.php');
+require_once('../utils/logger.php');
 
 if(!isset($_POST["submit"])) {
     echo "Unauthorised route";
@@ -13,7 +14,7 @@ $username = $_POST['username'];
 $pwd = $_POST['password'];
 
 
-$user = uidExists($conn, $username, $username);
+$user = uidExistsPdo($pdo_conn, $username, $username);
 
 if (!$user) {
     redirect('../Login/custom-login.php?error=user+not+found');
@@ -35,6 +36,7 @@ $_SESSION['task'] = $user['current_task'];
 $_SESSION['location'] = $user['current_location'];
 $_SESSION['role'] = $user['role'];
 
+$apiLogger->info('New login');
 
 // check user folder for files that are cleared from db and delete them
 $userdir = UPLOAD_PATH . 'user_' . $_SESSION['user_id'] . DIRECTORY_SEPARATOR;
@@ -42,7 +44,7 @@ if (file_exists($userdir)) {
     $userfiles = array_diff(scandir($userdir), array('.', '..'));
     foreach ($userfiles as $file) {
         $query = "SELECT * FROM `jc_attachments` WHERE `file_name` = ? AND `uploaded_by` = ?;";
-        $attachment = queryRow($conn, "find-file-attachment", $query, 'si', $file, $_SESSION["user_id"]);
+        $attachment = queryRowPdo($pdo_conn, "find-file-attachment", $query, $file, $_SESSION["user_id"]);
         if(!$attachment) {
             unlink($userdir . $file);
         }

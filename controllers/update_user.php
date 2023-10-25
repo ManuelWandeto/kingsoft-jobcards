@@ -4,11 +4,12 @@ require_once('../db/db.inc.php');
 require_once('../db/functions.inc.php');
 require_once('../db/queries/users.inc.php');
 require_once('../utils/redirect.php');
+require_once('../utils/logger.php');
 
 if(!isset($_POST["submit"]) || !isset($_SESSION['user_id'])) {
     redirect('../Login/brandlogin.php');
 }
-
+$apiLogger->info('Update user profile request');
 $id = $_SESSION["user_id"];
 $username = $_POST["username"];
 $email = $_POST["email"];
@@ -16,11 +17,11 @@ $phone = $_POST["phone"];
 $location = $_POST["currentLocation"];
 $task = $_POST["currentTask"];
 
-$nameExists = uidExists($conn, $username, $username);
+$nameExists = uidExistsPdo($pdo_conn, $username, $username);
 if($nameExists && $nameExists["id"] != $id) {
     redirect('../index.php?page=profile&error=username+exists');
 }
-$emailExists = uidExists($conn, $email, $email);
+$emailExists = uidExistsPdo($pdo_conn, $email, $email);
 if($emailExists && $emailExists["id"] != $id) {
     redirect('../index.php?page=profile&error=email+exists');
 }
@@ -35,7 +36,7 @@ $userdata = [
     "current_task" => $task,
 ];
 try {
-    $updatedUser = updateUser($conn, $userdata);
+    $updatedUser = updateUser($pdo_conn, $userdata, $dbLogger);
     if(!$updatedUser) {
         throw new Exception('No updated user returned');
     }
