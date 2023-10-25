@@ -171,8 +171,11 @@ function formdata() {
 
             axios.post('api/jobs/add_job.php', formData, config)
             .then(res => {
-                const newJob = res.data
                 Alpine.store('jobs').isLoaded = true
+                if(!res.data.id) {
+                    throw new Error('Error occured adding job') 
+                }
+                const newJob = res.data
                 Alpine.store('jobs').addJob(newJob)
                 showAlert('alert-success', 'Success!', 'Successfully added job')
             })
@@ -197,8 +200,8 @@ function formdata() {
             formData.set('reported_by', this.fields.reporter.value ?? '')
             formData.set('reporter_contact', this.fields.reporterContacts.value ?? '')
             formData.set('description', this.fields.description.value)
-            formData.set('assigned_to', this.fields.assignee.value ?? null)
-            formData.set('supervised_by', this.fields.supervisor.value ?? null)
+            formData.set('assigned_to', this.fields.assignee.value ?? '')
+            formData.set('supervised_by', this.fields.supervisor.value ?? '')
             formData.set('location', this.fields.location.value)
             formData.set('status', this.fields.status.value)
             formData.set('client_id', this.fields.client.value)
@@ -216,6 +219,9 @@ function formdata() {
             };
             axios.post('api/jobs/update_job.php', formData, config)
             .then((res) => {
+                if(!res.data?.id) {
+                    throw new Error('Uncaught error updating job')
+                }
                 updatedJob = res.data
                 Alpine.store('jobs').isLoaded = true
                 Alpine.store('jobs').editJob(updatedJob.id, updatedJob)
@@ -223,7 +229,7 @@ function formdata() {
             })
             .catch(e => {
                 Alpine.store('jobs').isLoaded = true
-                showAlert('alert-danger', 'Error occured', `Error updating job: ${e.response.data}`, 3500)
+                showAlert('alert-danger', 'Error occured', `Error updating job: ${e.response?.data ?? e}`, 3500)
             })
             this.clearForm()
 
