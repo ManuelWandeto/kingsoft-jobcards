@@ -3,6 +3,7 @@
   <div class="modal-dialog" role="document"
     x-data="{editMode: false, addMode: false, deleteMode: false, form: tagFormData(), search: '', tagData: {}, selectedTags: []}"
     x-effect="$dispatch('tags-changed', selectedTags)"
+    @set-tags.window="selectedTags = $event.detail"
   >
     <div class="modal-content">
       <div class="modal-header d-flex justify-content-between align-items-center">
