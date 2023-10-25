@@ -6,11 +6,11 @@ require_once('../../utils/respond.php');
 $content = trim(file_get_contents("php://input"));
 
 $decoded = json_decode($content, true);
-
+$apiLogger->info('New user sign-up request');
   //If json_decode failed, the JSON is invalid.
 if( is_array($decoded)) {
     try {
-        $user = signUpUser($conn, $decoded);
+        $user = signUpUser($pdo_conn, $decoded, $dbLogger);
         if (!$user) {
             throw new Exception("no new user returned", 500);
         }
@@ -20,6 +20,7 @@ if( is_array($decoded)) {
         respondWith($e->getCode(), $e->getMessage());
     }
 } else {
+    $apiLogger->error('Invalid json payload to sign up user request');
     respondWith(500, 'Invalid json');
 }
 
