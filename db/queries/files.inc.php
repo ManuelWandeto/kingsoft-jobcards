@@ -1,4 +1,5 @@
 <?php
+use Monolog\Logger;
 require_once('../../utils/constants.php');
 require_once('../../vendor/autoload.php');
 require_once(__DIR__ . '/../functions.inc.php');
@@ -119,7 +120,7 @@ function extract_user_id($path) {
     preg_match($pattern, $path, $matches);
     return $matches[1];
 }
-function deleteAttachedFile(mysqli $conn, array $attachment) {
+function deleteAttachedFile(PDO $conn, array $attachment, Logger $logger) {
     $filename = $attachment['filename'];
     $filepath = UPLOAD_PATH . "user_{$attachment['uploadedBy']}" . DIRECTORY_SEPARATOR .  $filename;
     
@@ -129,20 +130,19 @@ function deleteAttachedFile(mysqli $conn, array $attachment) {
     if ($attachment['uploadedBy'] != $_SESSION['user_id']) {
         throw new Exception("Unauthorised deletion, you can only delete files you posted", 401);
     }
-    $ok = queryExec(
-        $conn, 
-        'Delete attachment', 
-        "DELETE FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;",
-        'isi',
-        $attachment['jobId'],
-        $filename,
-        $attachment['uploadedBy']
-    );
-    if(!$ok) {
-        return false;
+    try {
+        $stmt = $conn->prepare("DELETE FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;");
+        $stmt->execute([
+            $attachment['jobId'],
+            $filename,
+            $attachment['uploadedBy']
+        ]);
+        unlink($filepath);
+        return true;
+    } catch (PDOException $e) {
+        $logger->error('Error removing attachment record', ['message' => $e->getMessage()]);
+        throw new Error('Error removing attachment record: '.$e->getMessage());
     }
-    unlink($filepath);
-    return true;
 }
 
 function getFileInfo(string $filepath) {
