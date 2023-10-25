@@ -1,9 +1,10 @@
 <?php
+use Monolog\Logger;
 require_once(__DIR__ . '/../functions.inc.php');
 require_once('files.inc.php');
 require_once(__DIR__ . '/../../utils/constants.php');
 define('LOGO_PATH', UPLOAD_PATH . 'client_logos' . DIRECTORY_SEPARATOR);
-function addClient(PDO $conn, array $client) {
+function addClient(PDO $conn, array $client, Logger $logger) {
     if (!isAuthorised(2)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
@@ -18,6 +19,7 @@ function addClient(PDO $conn, array $client) {
         }
         $logo = uploadFile('logo', LOGO_PATH) ?? null;
     } catch (Exception $e) {
+        $logger->withName('uploads')->error('Error uploading client logo', ['message'=>$e->getMessage()]);
         throw $e;
     }
     $clientName = $client['name'];
@@ -55,11 +57,12 @@ function addClient(PDO $conn, array $client) {
         $newClient = $getClient->fetch(PDO::FETCH_ASSOC);
         return $newClient;
     } catch (PDOException $e) {
+        $logger->error('Error adding client', ['message' => $e->getMessage()]);
         throw new Exception('Error with Add client query: '.$e->getMessage(), 500);
     }
 }
 
-function updateClient(PDO $conn, array $client) {
+function updateClient(PDO $conn, array $client, Logger $logger) {
     if (!isAuthorised(2)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
@@ -80,6 +83,7 @@ function updateClient(PDO $conn, array $client) {
             }
             $logo = uploadFile('logo', LOGO_PATH) ?? null;
         } catch (Exception $e) {
+            $logger->withName('uploads')->error('Error uploading client logo', ['message', $e->getMessage()]);
             throw $e;
         }
         // if old client had logo, delete it from file system
@@ -118,68 +122,66 @@ function updateClient(PDO $conn, array $client) {
         ]);
         return queryRowPdo($conn, 'get updated client', 'SELECT * FROM `jc_clients` WHERE id = ?;', $id);
     } catch (PDOException $e) {
+        $logger->error('Error updating client', ['message'=>$e->getMessage()]);
         throw new Exception('Error with Update client query: '.$e->getMessage(), 500);
     }
 }
-function deleteClient(mysqli $conn, int $clientId) {
+function deleteClient(PDO $conn, int $clientId, Logger $logger) {
     if (!isAuthorised(2)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
-    // check if row with given id exists
-    if (!IdExists($conn, $clientId, 'jc_clients')) {
-        throw new Exception("Client record with id: $clientId not found", 404);
+    try {
+        if (!IdExistsPdo($conn, $clientId, 'jc_clients')) {
+            throw new Exception("Client record with id: $clientId not found", 404);
+        }
+        // if id exists, perform deletion
+        $sql = 'DELETE FROM jc_clients WHERE id = ?;';
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$clientId]);
+        return true;
+    } catch (Exception $e) {
+        $logger->error('Error deleting client', ['message'=>$e->getMessage()]);
+        throw new Error('Error deleting client: '. $e->getMessage(), 500);
     }
-    // if id exists, perform deletion
-    $sql = 'DELETE FROM jc_clients WHERE id = ?;';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param($stmt, 'i', $clientId)) {
-        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing delete client query:". mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    return true;
 }
-function getClients(mysqli $conn) {
-    $results = mysqli_query($conn, "SELECT * FROM jc_clients;");
-    $clients = array();
-    if (!$results) {
-        throw new Exception("Error getting clients", 500);
-    }
-    if (mysqli_num_rows($results) === 0) {
-        return $clients;
-    }
-    while ($row = mysqli_fetch_assoc($results)) {
-        if(isset($row['logo']) && strlen($row['logo'])) {
-            $logo = LOGO_PATH . $row['logo'];
-            if(!file_exists($logo)) {
-                $id = $row['id'];
-                mysqli_query($conn, "UPDATE `jc_clients` SET `logo` = NULL WHERE `id` = $id;");
-                $row['logo'] = null;
+function getClients(PDO $conn, Logger $logger) {
+    try {
+        $results = $conn->query("SELECT * FROM jc_clients;")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($results as $row) {
+            # code...
+            if(isset($row['logo']) && strlen($row['logo'])) {
+                $logo = LOGO_PATH . $row['logo'];
+                if(!file_exists($logo)) {
+                    $id = $row['id'];
+                    $conn->query("UPDATE `jc_clients` SET `logo` = NULL WHERE `id` = $id;");
+                    $row['logo'] = null;
+                }
             }
         }
-        $clients[] = $row;
+        return $results;
+    } catch (PDOException $e) {
+        $logger->critical('Could not get clients', ['message'=>$e->getMessage()]);
+        throw new Error('Error getting clients: '. $e->getMessage());
     }
-    return $clients;
 }
 
-function deleteLogo(mysqli $conn, array $data) {
+function deleteLogo(PDO $conn, array $data, Logger $logger) {
     $filepath = LOGO_PATH . $data['filename'];
 
     if(!file_exists($filepath)) {
+        $logger->withName('uploads')->error('Error deleting client logo', ['message'=>'Logo not found']);
         throw new Exception('Logo not found', 404);
     }
     unlink($filepath);
-    return queryExec(
-        $conn, 
-        'delete logo', 
-        "UPDATE `jc_clients` SET `logo` = NULL WHERE `logo` = ? AND id = ?;", 
-        'si', 
-        $data['filename'], 
-        $data['clientId']
-    );
+    try {
+        $stmt = $conn->prepare("UPDATE `jc_clients` SET `logo` = NULL WHERE `logo` = ? AND id = ?;");
+        $stmt->execute([
+            $data['filename'], 
+            $data['clientId']
+        ]);
+        return true;
+    } catch (PDOException $e) {
+        $logger->error('Error deleting client logo', ['message'=>$e->getMessage()]);
+        throw new Error('Error deleting logo: '.$e->getMessage(), 500);
+    }
 }

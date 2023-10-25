@@ -1,122 +1,103 @@
 <?php
+use Monolog\Logger;
 require_once(__DIR__ . '/../functions.inc.php');
-function signUpUser(mysqli $conn, array $user) {
+function signUpUser(PDO $conn, array $user, Logger $logger) {
     if (!isAuthorised(3)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
-    if(uidExists($conn, $user["username"], $user["username"])) {
-        throw new Exception("This user already exists!", 400);
+    try {
+        //code...
+        if(uidExistsPdo($conn, $user["username"], $user["email"])) {
+            throw new Exception("This user already exists!", 400);
+        }
+        $sql = 'INSERT INTO jc_users (username, email, role, password) VALUES (?, ?, ?, ?);';
+        $stmt = $conn->prepare($sql);
+        $hashedPassword = password_hash($user["password"], PASSWORD_DEFAULT);
+        $stmt->execute([$user["username"], $user["email"], $user["role"], $hashedPassword]);
+        $lastInsertId = $conn->lastInsertId();
+        $newUser = $conn->query("SELECT * FROM jc_users WHERE id = $lastInsertId")->fetch(PDO::FETCH_ASSOC);
+        if (!$newUser) {
+            throw new Exception("Error getting new user", 500);
+        }
+        return $newUser;
+    } catch (Exception $e) {
+        $logger->error('Error signing up new user', ['message'=>$e->getMessage()]);
+        throw new Exception('Error signing up new user: '.$e->getMessage(), 500);
     }
-    $sql = 'INSERT INTO jc_users (username, email, role, password) VALUES (?, ?, ?, ?);';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ".mysqli_stmt_error($stmt), 500);
-    }
-    $hashedPassword = password_hash($user["password"], PASSWORD_DEFAULT);
-    mysqli_stmt_bind_param($stmt, 'ssss', $user["username"], $user["email"], $user["role"], $hashedPassword);
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing add user query: ".mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    $lastInsertId = mysqli_insert_id($conn);
-    $lastInsertRow = mysqli_query($conn, "SELECT * FROM jc_users WHERE id = $lastInsertId");
-    if (!$lastInsertRow) {
-        throw new Exception("Error getting last insert row", 500);
-    }
-    $newUser = mysqli_fetch_assoc($lastInsertRow);
-    if (!$newUser) {
-        throw new Exception("Error getting associative array from last insert row", 500);
-    }
-    return $newUser;
 }
-function deleteUser(mysqli $conn, int $userId) {
+function deleteUser(PDO $conn, int $userId, Logger $logger) {
     if (!isAuthorised(3)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
-    // check if row with given id exists
-    if (!IdExists($conn, $userId, 'jc_users')) {
-        throw new Exception("User record with id: $userId not found", 404);
+    try {
+        // check if row with given id exists
+        if (!IdExistsPdo($conn, $userId, 'jc_users')) {
+            throw new Exception("User record with id: $userId not found", 404);
+        }
+        // if id exists, perform deletion
+        $sql = 'DELETE FROM jc_users WHERE id = ?;';
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$userId]);
+        return true;
+    } catch (Exception $e) {
+        $logger->error('Error deleting user', ['message'->$e->getMessage()]);
+        throw new Exception('Error deleting user: '. $e->getMessage(), 500);
     }
-    // if id exists, perform deletion
-    $sql = 'DELETE FROM jc_users WHERE id = ?;';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param($stmt, 'i', $userId)) {
-        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing delete user query:". mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    return true;
 }
-function getUsers(mysqli $conn) {
-    $results = mysqli_query($conn, "SELECT * FROM jc_users;");
-    if (!$results) {
-        throw new Exception("Error getting users");
+function getUsers(PDO $conn, Logger $logger) {
+    try {
+        $results = $conn->query("SELECT * FROM jc_users;")->fetchAll(PDO::FETCH_ASSOC);
+        if (!$results) {
+            throw new Exception("Error getting users");
+        }
+        return $results;
+    } catch (Exception $e) {
+        $logger->critical('Error getting users', ['message'=>$e->getMessage()]);
+        throw new Exception('Error getting users: '.$e->getMessage(), 500);
     }
-    $users = array();
-    if (mysqli_num_rows($results) === 0) {
-        return $users;
-    }
-    while ($row = mysqli_fetch_assoc($results)) {
-        $users[] = $row;
-    }
-    return $users;
 }
 
-function updateUser(mysqli $conn, array $user) {
+function updateUser(PDO $conn, array $user, Logger $logger) {
     $id = $user['id'];
-    // check if row with given id exists
-    if (!IdExists($conn, $id, 'jc_users')) {
-        throw new Exception("User record with id: $id not found", 404);
+    try {
+        // check if row with given id exists
+        if (!IdExistsPdo($conn, $id, 'jc_users')) {
+            throw new Exception("User record with id: $id not found", 404);
+        }
+        // if id exists, perform update
+        $sql = 'UPDATE jc_users SET username = ?, email = ?, phone = ?, `current_location` = ?, `current_task` = ? WHERE id = ?;';
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            $user['username'], 
+            $user['email'], 
+            $user['phone'], 
+            $user['current_location'], 
+            $user['current_task'], 
+            $id
+        ]);
+        $updatedUser = queryRowPdo($conn, 'Get updated user', "SELECT * FROM jc_users WHERE id = ?;", $id); 
+        return $updatedUser;
+    } catch (Exception $e) {
+        $logger->error('Error updating user', ['message'=>$e->getMessage()]);
+        throw new Exception('Error updating user: '.$e->getMessage(), 500);
     }
-    // if id exists, perform update
-    $sql = 'UPDATE jc_users SET username = ?, email = ?, phone = ?, `current_location` = ?, `current_task` = ? WHERE id = ?;';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement", 500);
-    }
-    if (!mysqli_stmt_bind_param(
-        $stmt, 
-        'sssssi', 
-        $user['username'], 
-        $user['email'], 
-        $user['phone'], 
-        $user['current_location'], 
-        $user['current_task'], 
-        $id
-    )) {
-        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing insert client query", 500);
-    }
-    mysqli_stmt_close($stmt);
-    return $user;
 }
-function updateUserRole(mysqli $conn, int $id, string $role) {
+function updateUserRole(PDO $conn, int $id, string $role, Logger $logger) {
     if(!isAuthorised(3)) {
         throw new Exception("You are not authorised for this operation!", 401);
     }
-    // check if row with given id exists
-    if (!IdExists($conn, $id, 'jc_users')) {
-        throw new Exception("User record with id: $id not found", 404);
+    try {
+        // check if row with given id exists
+        if (!IdExistsPdo($conn, $id, 'jc_users')) {
+            throw new Exception("User record with id: $id not found", 404);
+        }
+        // if id exists, perform update
+        $sql = 'UPDATE jc_users SET `role` = ? WHERE id = ?;';
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$role, $id]);
+        return true;
+    } catch (Exception $e) {
+        $logger->error('Error updating user role', ['message'=>$e->getMessage()]);
+        throw new Exception('Error updating user role: '.$e->getMessage(), 500);
     }
-    // if id exists, perform update
-    $sql = 'UPDATE jc_users SET `role` = ? WHERE id = ?;';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement", 500);
-    }
-    if (!mysqli_stmt_bind_param($stmt, 'si', $role, $id)) {
-        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing insert client query", 500);
-    }
-    mysqli_stmt_close($stmt);
-    return true;
 }

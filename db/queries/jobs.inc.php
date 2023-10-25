@@ -1,146 +1,130 @@
 <?php
+use Monolog\Logger;
 require_once(__DIR__ . '/../functions.inc.php');
 require_once('tags.inc.php');
 require_once('files.inc.php');
-function addJob(mysqli $conn, array $jobData) {
+function addJob(PDO $conn, array $jobData, Logger $logger) {
     $filenames = [];
     try {
         $filenames = uploadFiles();
     } catch (Exception $e) {
+        $logger->withName('uploads')->error('Error uploading attachments', ['message'=>$e->getMessage()]);
         throw $e;
     }
+    try {
+        //code...
+        $sql = "INSERT INTO jc_jobcards 
+                    (
+                        `project`, 
+                        client_id, 
+                        `priority`,  
+                        `assigned_to`, 
+                        `supervised_by`, 
+                        `reported_by`,
+                        `reporter_contacts`,
+                        `description`, 
+                        `location`, 
+                        `status`, 
+                        `start_date`, 
+                        `end_date`, 
+                        completion_notes, 
+                        issues_arrising
+                    ) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            $jobData['project'], 
+            $jobData['client_id'], 
+            $jobData['priority'], 
+            isset($jobData['assigned_to']) ? $jobData['assigned_to'] : null, 
+            isset($jobData['supervised_by']) ? $jobData['supervised_by'] : null, 
+            $jobData['reported_by'], 
+            $jobData['reporter_contacts'], 
+            $jobData['description'], 
+            $jobData['location'], 
+            $jobData['status'], 
+            $jobData['start_date'], 
+            $jobData['end_date'],
+            $jobData['completion_notes'],
+            $jobData['issues_arrising'],
+        ]);
+        $lastInsertId = $conn->lastInsertId();
+        if ($filenames) {
+            // IF attachments have been uploaded, post them to the attachments table
+            $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_name`, `uploaded_by`) VALUES (?, ?, ?)';
+            $stmt = $conn->prepare($sql);
+            for ($i=0; $i < count($filenames); $i++) { 
+                $stmt->execute([
+                    $lastInsertId, $filenames[$i], $_SESSION['user_id']
+                ]);
+            }
+        }
+        $tags = $jobData['tags'][0] ? array_map('intval', explode(',', $jobData['tags'][0])) : [];
     
-    $sql = 'INSERT INTO jc_jobcards 
-                (
-                    `project`, 
-                    client_id, 
-                    `priority`,  
-                    `assigned_to`, 
-                    `supervised_by`, 
-                    `reported_by`,
-                    `reporter_contacts`,
-                    `description`, 
-                    `location`, 
-                    `status`, 
-                    `start_date`, 
-                    `end_date`, 
-                    completion_notes, 
-                    issues_arrising
-                ) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-    }
-    $boundOk = mysqli_stmt_bind_param(
-        $stmt, 
-        'sisiisssssssss', 
-        $jobData['project'], 
-        $jobData['client_id'], 
-        $jobData['priority'], 
-        $jobData['assigned_to'], 
-        $jobData['supervised_by'], 
-        $jobData['reported_by'], 
-        $jobData['reporter_contacts'], 
-        $jobData['description'], 
-        $jobData['location'], 
-        $jobData['status'], 
-        $jobData['start_date'], 
-        $jobData['end_date'],
-        $jobData['completion_notes'],
-        $jobData['issues_arrising'],
-    );
-    if (!$boundOk) {
-        throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing insert job query: ".mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    $lastInsertId = mysqli_insert_id($conn);
-    if ($filenames) {
-        // IF attachments have been uploaded, post them to the attachments table
-        $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_name`, `uploaded_by`) VALUES (?, ?, ?)';
-        $stmt = mysqli_stmt_init($conn);
-        if(!mysqli_stmt_prepare($stmt, $sql)) {
-            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-        }
-        for ($i=0; $i < count($filenames); $i++) { 
-            $boundOk = mysqli_stmt_bind_param($stmt, 'isi', $lastInsertId, $filenames[$i], $_SESSION['user_id']);
-            if (!$boundOk) {
-                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+        try {
+            //code...
+            if ($tags) {
+                $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?)';
+                $stmt = $conn->prepare($sql);
+                for ($i=0; $i < count($tags); $i++) { 
+                    $stmt->execute([$lastInsertId, $tags[$i]]);
+                }
             }
-            if(!mysqli_stmt_execute($stmt)) {
-                throw new Exception("Error executing insert attachment query: ".mysqli_stmt_error($stmt), 500);
-            }
+        } catch (PDOException $e) {
+            $logger->error('Error inserting jobcard tags while adding job', ['message'=>$e->getMessage()]);
         }
-        mysqli_stmt_close($stmt);
-    }
-    $tags = $jobData['tags'][0] ? array_map('intval', explode(',', $jobData['tags'][0])) : [];
+        $getNewJob = "
+            SELECT 
+                j.id, 
+                j.project, 
+                j.client_id,
+                j.priority,
+                j.assigned_to,
+                j.supervised_by,
+                j.reported_by,
+                j.reporter_contacts,
+                j.description,
+                j.`location`,
+                j.status,
+                j.start_date,
+                j.end_date,
+                j.completion_notes,
+                j.issues_arrising,
+                GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
+                GROUP_CONCAT(DISTINCT t.tag_id) as tags,
+                j.created_at
+            FROM jc_jobcards as j
+            LEFT JOIN jc_attachments as a
+            ON j.id = a.jobcard_id
+            LEFT JOIN jc_jobcard_tags as t
+            ON j.id = t.jobcard_id
+            WHERE j.id = ?
+            GROUP BY j.id;
+        ";
+        $newJob = queryRowPdo($conn, 'get inserted job', $getNewJob, $lastInsertId); 
+        if (!$newJob) {
+            throw new Exception("Error getting inserted job", 500);
+        }
+        if($newJob['files']) {
+            $files = [];
+            $paths = explode(',', $newJob['files']);
+            foreach ($paths as $path) {
+                $files[] = getFileInfo(UPLOAD_PATH . join(DIRECTORY_SEPARATOR, explode('/', $path)));
+            }
+            $newJob['files'] = $files;
+        }
+        if($newJob['tags']) {
+            $newJob['tags'] =  explode(',', $newJob['tags']);
+        }
+        return $newJob;
 
-    if ($tags) {
-        $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?)';
-        $stmt = mysqli_stmt_init($conn);
-        if(!mysqli_stmt_prepare($stmt, $sql)) {
-            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-        }
-        for ($i=0; $i < count($tags); $i++) { 
-            $boundOk = mysqli_stmt_bind_param($stmt, 'ii', $lastInsertId, $tags[$i]);
-            if (!$boundOk) {
-                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
-            }
-            if(!mysqli_stmt_execute($stmt)) {
-                throw new Exception("Error executing insert tags query: ".mysqli_stmt_error($stmt), 500);
-            }
-        }
-        mysqli_stmt_close($stmt);
+    } catch (Exception $e) {
+        $logger->error('Error adding job', ['message'=>$e->getMessage()]);
+        throw new Exception('Error adding job: '.$e->getMessage(), 500);
     }
-    $getNewJob = "
-        SELECT 
-            j.id, 
-            j.project, 
-            j.client_id,
-            j.priority,
-            j.assigned_to,
-            j.supervised_by,
-            j.reported_by,
-            j.reporter_contacts,
-            j.description,
-            j.`location`,
-            j.status,
-            j.start_date,
-            j.end_date,
-            j.completion_notes,
-            j.issues_arrising,
-            GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
-            GROUP_CONCAT(DISTINCT t.tag_id) as tags,
-            j.created_at
-        FROM jc_jobcards as j
-        LEFT JOIN jc_attachments as a
-        ON j.id = a.jobcard_id
-        LEFT JOIN jc_jobcard_tags as t
-        ON j.id = t.jobcard_id
-        WHERE j.id = ?
-        GROUP BY j.id;
-    ";
-    $newJob = queryRow($conn, 'get inserted job', $getNewJob, 'i', $lastInsertId); 
-    if (!$newJob) {
-        throw new Exception("Error getting inserted job", 500);
-    }
-    if($newJob['files']) {
-        $files = [];
-        $paths = explode(',', $newJob['files']);
-        foreach ($paths as $path) {
-            $files[] = getFileInfo(UPLOAD_PATH . join(DIRECTORY_SEPARATOR, explode('/', $path)));
-        }
-        $newJob['files'] = $files;
-    }
-    if($newJob['tags']) {
-        $newJob['tags'] =  explode(',', $newJob['tags']);
-    }
-    return $newJob;
 }
-function getJobs(PDO $conn, array $filters) {
+function getJobs(PDO $conn, array $filters, Logger $logger) {
     // run update_jobcard_statuses() stored procedure
     if(!$conn->query('CALL update_jobcard_statuses();')->execute()) {
         throw new Exception("Error running jobcards maintenance ", 500);
@@ -287,6 +271,7 @@ function getJobs(PDO $conn, array $filters) {
     
         $stmt->execute($queryParams);
     } catch (PDOException $e) {
+        $logger->critical('Error getting jobs', ['message'=>$e->getMessage()]);
         throw new Exception('Error executing get jobs query: '.$e->getMessage(), 500);
     }
 
@@ -316,7 +301,7 @@ function getJobs(PDO $conn, array $filters) {
                         $deleteStmt->bindValue(':file_name', basename($filepath));
                         $deleteStmt->bindValue(':uploaded_by', extract_user_id($filepath), PDO::PARAM_INT);
                         if(!$deleteStmt->execute()) {
-                            // TODO: log error in file
+                            $logger->error('Error deleting attachment record of missing file', ['message'=>$e->getMessage()]);
                         }
                         continue;
                     }
@@ -335,49 +320,47 @@ function getJobs(PDO $conn, array $filters) {
     }
     return ["jobs" => $jobs];
 }
-function updateJob(mysqli $conn, array $job) {
+function updateJob(PDO $conn, array $job, Logger $logger) {
     $filenames = [];
     try {
         $filenames = uploadFiles();
     } catch (Exception $e) {
+        $logger->error('Error uploading jobcard updated attachments', ['message'=>$e->getMessage()]);
         throw $e;
     }
 
-    $id = $job['id'];
-    // check if row with given id exists
-    if (!IdExists($conn, $id, 'jc_jobcards')) {
-        throw new Exception("Job record with id: $id not found", 404);
-    }
-    $assignee = htmlspecialchars(trim($job['assigned_to']," ;$\n\r\t\v\x00")) ?? null;
-    $supervisor = htmlspecialchars(trim($job["supervised_by"]," ;$\n\r\t\v\x00")) ?? null;
-    
-    $sql = "UPDATE jc_jobcards 
-            SET     
-                `project` = ?, 
-                client_id = ?, 
-                `priority` = ?,  
-                `assigned_to` = $assignee, 
-                `supervised_by` = $supervisor, 
-                `reported_by` = ?,
-                `reporter_contacts` = ?,
-                `description` = ?, 
-                `location` = ?, 
-                `status` = ?, 
-                `start_date` = ?, 
-                `end_date` = ?, 
-                completion_notes = ?, 
-                issues_arrising = ?
-            WHERE id = ?;";
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param(
-            $stmt, 
-            'sissssssssssi', 
+    try {
+        //code...
+        $id = $job['id'];
+        $conn->beginTransaction();
+        // check if row with given id exists
+        if (!IdExistsPdo($conn, $id, 'jc_jobcards')) {
+            throw new Exception("Job record with id: $id not found", 404);
+        }
+        $sql = "UPDATE jc_jobcards 
+                SET     
+                    `project` = ?, 
+                    client_id = ?, 
+                    `priority` = ?,  
+                    `assigned_to` = ?, 
+                    `supervised_by` = ?, 
+                    `reported_by` = ?,
+                    `reporter_contacts` = ?,
+                    `description` = ?, 
+                    `location` = ?, 
+                    `status` = ?, 
+                    `start_date` = ?, 
+                    `end_date` = ?, 
+                    completion_notes = ?, 
+                    issues_arrising = ?
+                WHERE id = ?;";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
             $job['project'], 
             $job['client_id'], 
             $job['priority'], 
+            intval($job['assigned_to']) ? $job['assigned_to'] : null,
+            intval($job['supervised_by']) ? $job['supervised_by'] : null,
             $job['reported_by'],
             $job['reporter_contacts'],
             $job['description'], 
@@ -388,95 +371,151 @@ function updateJob(mysqli $conn, array $job) {
             $job['completion_notes'],
             $job['issues_arrising'],
             $id
-        )) {
-        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing update job query: ". mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    if ($filenames) {
-        // IF attachments have been uploaded, post them to the attachments table
-        for ($i=0; $i < count($filenames); $i++) { 
-            $attachment_Exists = queryRow(
-                $conn, 
-                'Attachment exists', 
-                'SELECT * FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;',
-                'isi',
-                $id,
-                $filenames[$i],
-                $_SESSION['user_id']
-            );
-            if($attachment_Exists) {
-                continue;
-            }
-            $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_name`, `uploaded_by`) VALUES (?, ?, ?);';
-            $stmt = mysqli_stmt_init($conn);
-            if(!mysqli_stmt_prepare($stmt, $sql)) {
-                throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-            }
-            $boundOk = mysqli_stmt_bind_param($stmt, 'isi', $id, $filenames[$i], $_SESSION['user_id']);
-            if (!$boundOk) {
-                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
-            }
-            if(!mysqli_stmt_execute($stmt)) {
-                throw new Exception("Error executing insert attachment query: ".mysqli_stmt_error($stmt), 500);
-            }
-            mysqli_stmt_close($stmt);
-        }
-    }
-    $oldTagsRecord = queryRow(
-        $conn, 
-        'get tags for jobcard', 
-        "SELECT GROUP_CONCAT(t.tag_id) as tags FROM jc_jobcard_tags t WHERE  t.jobcard_id = ?;", 
-        'i',
-        $id
-    );
-
-    $oldTags = $oldTagsRecord['tags'] ? array_map('intval', explode(',', $oldTagsRecord['tags'])) : [];
-
-    $newTags = $job['tags'][0] ? array_map('intval', explode(',', $job['tags'][0])) : [];
-    // Get old tags not included in the new and remove them
-    $removedTags = array_values(array_diff($oldTags, $newTags));
-
-    if($removedTags) {
-        $sql = 'DELETE FROM jc_jobcard_tags WHERE jobcard_id = ? AND tag_id = ?;';
-        $stmt = mysqli_stmt_init($conn);
-        if(!mysqli_stmt_prepare($stmt, $sql)) {
-            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-        }
-        for ($i=0; $i < count($removedTags); $i++) { 
-            $boundOk = mysqli_stmt_bind_param($stmt, 'ii', $id, $removedTags[$i]);
-            if (!$boundOk) {
-                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
-            }
-            if(!mysqli_stmt_execute($stmt)) {
-                throw new Exception("Error executing detach removed tags query: ".mysqli_stmt_error($stmt), 500);
-            }
-        }
-        mysqli_stmt_close($stmt);
-    }
-    // get new tags not already in the old and add them
-    $tags = array_values(array_diff($newTags, $oldTags));
     
-    if ($tags) {
-        $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?);';
-        $stmt = mysqli_stmt_init($conn);
-        if(!mysqli_stmt_prepare($stmt, $sql)) {
-            throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-        }
-        for ($i=0; $i < count($tags); $i++) { 
-            $boundOk = mysqli_stmt_bind_param($stmt, 'ii', $id, $tags[$i]);
-            if (!$boundOk) {
-                throw new Exception("Invalid params: ".mysqli_stmt_error($stmt), 400);
+        ]);
+        if ($filenames) {
+            // IF attachments have been uploaded, post them to the attachments table
+            try {
+                //code...
+                for ($i=0; $i < count($filenames); $i++) { 
+                    $attachment_Exists = queryRowPdo(
+                        $conn, 
+                        'Attachment exists', 
+                        'SELECT * FROM `jc_attachments` WHERE `jobcard_id` = ? AND `file_name` = ? AND `uploaded_by` = ?;',
+                        $id,
+                        $filenames[$i],
+                        $_SESSION['user_id']
+                    );
+                    if($attachment_Exists) {
+                        continue;
+                    }
+                    $sql = 'INSERT INTO jc_attachments (`jobcard_id`, `file_name`, `uploaded_by`) VALUES (?, ?, ?);';
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute([$id, $filenames[$i], $_SESSION['user_id']]);
+                }
+            } catch (PDOException $e) {
+                $logger->error('Error posting attachments to db', ['message'=>$e->getMessage()]);
             }
-            if(!mysqli_stmt_execute($stmt)) {
-                throw new Exception("Error executing insert tags query: ".mysqli_stmt_error($stmt), 500);
+        }
+        $oldTagsRecord = queryRowPdo(
+            $conn, 
+            'get tags for jobcard', 
+            "SELECT GROUP_CONCAT(t.tag_id) as tags FROM jc_jobcard_tags t WHERE  t.jobcard_id = ?;", 
+            $id
+        );
+    
+        $oldTags = $oldTagsRecord['tags'] ? array_map('intval', explode(',', $oldTagsRecord['tags'])) : [];
+    
+        $newTags = $job['tags'][0] ? array_map('intval', explode(',', $job['tags'][0])) : [];
+        // Get old tags not included in the new and remove them
+        $removedTags = array_values(array_diff($oldTags, $newTags));
+    
+        if($removedTags) {
+            try {
+                //code...
+                $sql = 'DELETE FROM jc_jobcard_tags WHERE jobcard_id = ? AND tag_id = ?;';
+                $stmt = $conn->prepare($sql);
+                for ($i=0; $i < count($removedTags); $i++) { 
+                    $stmt->execute([$id, $removedTags[$i]]);
+                }
+            } catch (PDOException $e) {
+                $logger->error('Error in update jobcard query while removing old tags', ['message'=>$e->getMessage()]);
             }
         }
-        mysqli_stmt_close($stmt);
+        // get new tags not already in the old and add them
+        $tags = array_values(array_diff($newTags, $oldTags));
+        
+        if ($tags) {
+            try {
+                $sql = 'INSERT INTO jc_jobcard_tags (`jobcard_id`, `tag_id`) VALUES (?, ?);';
+                $stmt = $conn->prepare($sql);
+                for ($i=0; $i < count($tags); $i++) { 
+                    $stmt->execute([$id, $tags[$i]]);
+                }
+            } catch (Exception $e) {
+                $logger->error('Error in update jobcard query while posting new tags', ['message'=>$e->getMessage()]);
+            }
+        }
+        $conn->commit();
+
+        try {
+            //code...
+            $getUpdatedJob = "
+                SELECT 
+                    j.id, 
+                    j.project, 
+                    j.client_id,
+                    j.priority,
+                    j.assigned_to,
+                    j.supervised_by,
+                    j.reported_by,
+                    j.reporter_contacts,
+                    j.description,
+                    j.`location`,
+                    j.status,
+                    j.start_date,
+                    j.end_date,
+                    j.completion_notes,
+                    j.issues_arrising,
+                    GROUP_CONCAT(DISTINCT 'user_', a.uploaded_by, '/', a.file_name) as files,
+                    GROUP_CONCAT(DISTINCT t.tag_id) as tags,
+                    j.created_at
+                FROM jc_jobcards as j
+                LEFT JOIN jc_attachments as a
+                ON j.id = a.jobcard_id
+                LEFT JOIN jc_jobcard_tags as t
+                ON j.id = t.jobcard_id
+                WHERE j.id = ?
+                GROUP BY j.id;
+            ";
+            $updatedJob = queryRowPdo($conn, 'get inserted job', $getUpdatedJob, $id); 
+            if (!$updatedJob) {
+                throw new Exception("Error getting inserted job", 500);
+            }
+            if($updatedJob['files'] ) {
+                $files = [];
+                $paths = explode(',', $updatedJob['files']);
+                foreach ($paths as $path) {
+                    $files[] = getFileInfo(UPLOAD_PATH . join(DIRECTORY_SEPARATOR, explode('/', $path)));
+                }
+                $updatedJob['files'] = $files;
+            }
+            if($updatedJob['tags']) {
+                $updatedJob['tags'] =  explode(',', $updatedJob['tags']);
+            }
+            return $updatedJob;
+        } catch (Exception $e) {
+            $logger->error('Error in update jobcard query while getting new job', ['message'=>$e->getMessage()]);
+        }
+
+    } catch (Exception $e) {
+        $conn->rollBack();
+        $logger->error('Error updating job', ['message'=>$e->getMessage()]);
+        throw new Error('Error updating job: '.$e->getMessage(), 500);
     }
-    $getUpdatedJob = "
+}
+function finaliseJob(PDO $conn, array $job, Logger $logger) {
+    $id = $job['id'];
+    try {
+        // check if row with given id exists
+        if (!IdExistsPdo($conn, $id, 'jc_jobcards')) {
+            throw new Exception("Job record with id: $id not found", 404);
+        }
+        // if id exists, perform update
+        $sql = 'UPDATE jc_jobcards 
+                SET     
+                    `status` = ?, 
+                    completion_notes = ?, 
+                    issues_arrising = ?
+                WHERE id = ?;';
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            $job['status'], 
+            $job['completion_notes'],
+            $job['issues_arrising'],
+            $id
+        ]);
+        $getUpdatedJob = "
         SELECT 
             j.id, 
             j.project, 
@@ -503,54 +542,11 @@ function updateJob(mysqli $conn, array $job) {
         ON j.id = t.jobcard_id
         WHERE j.id = ?
         GROUP BY j.id;
-    ";
-    $updatedJob = queryRow($conn, 'get inserted job', $getUpdatedJob, 'i', $id); 
-    if (!$updatedJob) {
-        throw new Exception("Error getting inserted job", 500);
+        ";
+        $job = queryRowPdo($conn, 'Get updated job', $getUpdatedJob, $id);
+        return $job;
+    } catch (PDOException $e) {
+        $logger->error('Error finalizing job', ['message'=>$e->getMessage()]);
+        throw new Error('Error finalizing job: '.$e->getMessage(), 500);
     }
-    if($updatedJob['files'] ) {
-        $files = [];
-        $paths = explode(',', $updatedJob['files']);
-        foreach ($paths as $path) {
-            $files[] = getFileInfo(UPLOAD_PATH . join(DIRECTORY_SEPARATOR, explode('/', $path)));
-        }
-        $updatedJob['files'] = $files;
-    }
-    if($updatedJob['tags']) {
-        $updatedJob['tags'] =  explode(',', $updatedJob['tags']);
-    }
-    return $updatedJob;
-}
-function finaliseJob(mysqli $conn, array $job) {
-    $id = $job['id'];
-    // check if row with given id exists
-    if (!IdExists($conn, $id, 'jc_jobcards')) {
-        throw new Exception("Job record with id: $id not found", 404);
-    }
-    // if id exists, perform update
-    $sql = 'UPDATE jc_jobcards 
-            SET     
-                `status` = ?, 
-                completion_notes = ?, 
-                issues_arrising = ?
-            WHERE id = ?;';
-    $stmt = mysqli_stmt_init($conn);
-    if(!mysqli_stmt_prepare($stmt, $sql)) {
-        throw new Exception("Error preparing sql statement: ". mysqli_stmt_error($stmt), 500);
-    }
-    if (!mysqli_stmt_bind_param(
-            $stmt, 
-            'sssi', 
-            $job['status'], 
-            $job['completion_notes'],
-            $job['issues_arrising'],
-            $id
-        )) {
-        throw new Exception("Invalid params: ". mysqli_stmt_error($stmt), 400);
-    }
-    if(!mysqli_stmt_execute($stmt)) {
-        throw new Exception("Error executing insert client query: ". mysqli_stmt_error($stmt), 500);
-    }
-    mysqli_stmt_close($stmt);
-    return $job;
 }
