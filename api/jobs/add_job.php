@@ -11,9 +11,9 @@ if (isset($_SERVER['CONTENT_LENGTH'])
 {
     respondWith(400, 'File too large');
 }
-
+$apiLogger->info('Add job request');
 try {
-    $job = addJob($conn, $_POST);
+    $job = addJob($pdo_conn, $_POST, $dbLogger);
     if (!$job) {
         throw new Exception("no new job returned", 500);
     }

@@ -7,11 +7,11 @@ require_once('../../utils/respond.php');
 $content = trim(file_get_contents("php://input"));
 
 $decoded = json_decode($content, true);
-
+$apiLogger->info('Delete client logo request');
   //If json_decode failed, the JSON is invalid.
 if( is_array($decoded)) {
     try {
-        $ok = deleteLogo($conn, $decoded);
+        $ok = deleteLogo($pdo_conn, $decoded, $dbLogger);
         if (!$ok) {
             throw new Exception("Failed to delete logo: ". $decoded['filename'], 500);
         }
@@ -21,5 +21,6 @@ if( is_array($decoded)) {
         respondWith($e->getCode(), $e->getMessage());
     }
 } else {
+    $apiLogger->error('Invalid json to delete client logo request');
     respondWith(500, "Invalid json");
 }

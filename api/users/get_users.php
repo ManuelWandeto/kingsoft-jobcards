@@ -5,7 +5,7 @@ require_once('../../db/queries/users.inc.php');
 require_once('../../utils/respond.php');
 
 try {
-    $users = getUsers($conn);
+    $users = getUsers($pdo_conn, $dbLogger);
     if (!count($users)) {
         throw new Exception("No users was returned", 500);
     }

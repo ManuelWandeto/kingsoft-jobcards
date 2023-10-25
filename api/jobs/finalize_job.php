@@ -7,11 +7,11 @@ require_once('../../utils/respond.php');
 $content = trim(file_get_contents("php://input"));
 
 $decoded = json_decode($content, true);
-
+$apiLogger->info('Finalise job request');
   //If json_decode failed, the JSON is invalid.
 if( is_array($decoded)) {
     try {
-        $job = finaliseJob($conn, $decoded);
+        $job = finaliseJob($pdo_conn, $decoded, $dbLogger);
         if (!$job) {
             throw new Exception("Error updating job with id: ". $decoded['id'], 500);
         }
@@ -21,5 +21,6 @@ if( is_array($decoded)) {
         respondWith($e->getCode(), $e->getMessage());
     }
 } else {
+    $apiLogger->error('Invalid json payload to finalise job request');
     respondWith(500, "Invalid json");
 }
