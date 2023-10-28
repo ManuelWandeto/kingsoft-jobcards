@@ -316,6 +316,7 @@ function getJobs(PDO $conn, array $filters, Logger $logger) {
         $jobs[] = $row;
     }
     if(!(count($results) < $pagesize + 1)) {
+        array_pop($jobs);
         return ["jobs" => $jobs, "has_next_page" => true];
     }
     return ["jobs" => $jobs];
