@@ -271,6 +271,46 @@ document.addEventListener('alpine:init', async () => {
         }
     })
 
+    Alpine.store('reports', {
+        jobsPerDay: {
+            isLoaded: false,
+            data: [],
+            error: null,
+            filters: {
+                timeUnit: 'day',
+                period: {
+                    allTime: false,
+                    from: moment().subtract(28, 'days').toISOString(),
+                    to: moment().toISOString(),
+                }
+            },
+            async getJobsPerDay() {
+                try {
+                    const res = await axios('api/reports/jobs_per_day.php', {
+                        params: {
+                            unit: this.filters.timeUnit,
+                            ...(
+                                this.filters.period.allTime 
+                                ? {'all-time': true} 
+                                : {from: this.filters.period.from, to: this.filters.period.to}
+                            ),
+                        }
+                    })
+                    if(!res.data.report) {
+                        throw new Error('Uncaught error getting jobs per day report')
+                    }
+                    this.data = res.data.report
+                } catch (error) {
+                    this.error = {
+                        code: 500,
+                        message: error
+                    }
+                } finally {
+                    this.isLoaded = true
+                }
+            }
+        }
+    });
     Alpine.store('jobs').getJobs();
 
     Alpine.store('clients').getClients();
