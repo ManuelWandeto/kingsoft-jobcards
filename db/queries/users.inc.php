@@ -7,7 +7,7 @@ function signUpUser(PDO $conn, array $user, Logger $logger) {
     }
     try {
         //code...
-        if(uidExistsPdo($conn, $user["username"], $user["email"])) {
+        if(uidExistsPdo($conn, $user["username"], $user["email"] ? $user["email"] : $user["username"])) {
             throw new Exception("This user already exists!", 400);
         }
         $sql = 'INSERT INTO jc_users (username, email, role, password) VALUES (?, ?, ?, ?);';
