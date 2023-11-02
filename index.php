@@ -45,6 +45,7 @@
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
   <script src="https://cdn.jsdelivr.net/npm/@caneara/iodine@8.3.0/dist/iodine.min.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.4.1"></script>
@@ -134,6 +135,12 @@
               <p>Profile</p>
             </a>
           </li>
+          <li :class="page == 'analytics' && 'active'">
+            <a href="?page=analytics">
+              <i class="now-ui-icons business_chart-bar-32"></i>
+              <p>Analytics</p>
+            </a>
+          </li>
           <li>
             <a href="controllers/logout.php">
               <i class="now-ui-icons arrows-1_share-66" style="transform: rotate(-90deg);"></i>
@@ -183,8 +190,11 @@
         <?php
           // require_once('tags.php');
 
-          if(isset($_GET["page"])) {
+          if(isset($_GET["page"]) && $_GET['page'] == 'profile') {
             require_once('edit_profile.php');
+          } 
+          else if(isset($_GET["page"]) && $_GET['page'] == 'analytics') {
+            require_once('analytics.php');
           } else {
             require_once('add_jobcard.php');
             require_once('jobs_table.php');
