@@ -87,8 +87,9 @@ div.custom-dropdown > div.dropdown-content{
     left: 0;
     right: 0;
     top: 0;
-    height: max-content;
+    height: min-content;
     /* width: max-content; */
+    /* overflow-y: scroll; */
     background: white;
     z-index: 99999;
     box-shadow: 1px 2px 26px 0px rgba(41,39,39,0.67);
@@ -414,7 +415,7 @@ div.card table.alltime-jobs thead tr th {
     position: sticky;
     top: 0;
 }
-div#jobs-table div.card-header {
+div.card div.card-header {
     display: flex; 
     align-items: center; 
     gap: 12px
@@ -608,6 +609,35 @@ div.filters div.filter-action {
     align-items: center;
     border: 1px solid #ced4da;
     border-radius: 4px;
+    position: relative;
+}
+div.filters div.filter-action input {
+    border: none;
+    outline: none;
+    padding: 0 1rem;
+    font-family: 'Montserrat';
+    transition: all .3s ease-in-out;
+}
+div.filters div.filter-action i {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    transition: all .3s ease-in-out;
+    margin: 0;
+}
+div.filters div.filter-action i.active {
+    transform: translateY(-50%)  rotate(180deg);
+}
+div.filters div.filter-action.clients button.icon-button {
+    border-left: 1px solid grey;
+}
+div.filters div.filter-action.clients button.icon-button i {
+    transform: unset;
+}
+div.filters div.filter-action input:focus {
+    border: 1px solid #2CA8FF;
+
 }
 div.filters button.filter-button {
     padding: 10px 22px;
