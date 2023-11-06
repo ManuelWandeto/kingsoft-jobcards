@@ -413,7 +413,8 @@ div.card table.alltime-jobs thead tr th {
     position: sticky;
     top: 0;
 }
-div.card div.card-header {
+.container.analytics div.card div.card-header,
+div#jobs-table div.card-header {
     display: flex; 
     align-items: center; 
     gap: 12px
