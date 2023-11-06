@@ -280,8 +280,14 @@ document.addEventListener('alpine:init', async () => {
                 timeUnit: 'day',
                 period: {
                     allTime: false,
-                    from: moment().subtract(28, 'days').toISOString(),
-                    to: moment().toISOString(),
+                    from: moment().subtract(28, 'days').format('YYYY-MM-DD'),
+                    to: moment().format('YYYY-MM-DD'),
+                },
+                clearFilters() {
+                    this.timeUnit = 'day'
+                    this.period.allTime = false
+                    this.period.from = moment().subtract(28, 'days').format('YYYY-MM-DD'),
+                    this.period.to = moment().format('YYYY-MM-DD')
                 }
             },
             async getJobsPerDay() {
@@ -299,17 +305,144 @@ document.addEventListener('alpine:init', async () => {
                     if(!res.data.report) {
                         throw new Error('Uncaught error getting jobs per day report')
                     }
-                    this.data = res.data.report
+                    if(!res.data.report?.length) {
+                        throw {
+                            status: 204,
+                            message: "There is currently no data for the given filters"
+                        }
+                    }
+                    this.data = res.data
+                    this.error = null
                 } catch (error) {
+                    this.data = []
+                    if(error?.status) {
+                        this.error = error
+                        throw error
+                    }
                     this.error = {
-                        code: 500,
+                        status: 500,
                         message: error
                     }
+                    throw this.error
                 } finally {
                     this.isLoaded = true
                 }
             }
-        }
+        },
+        jobsPerTag: {
+            isLoaded: false,
+            data: [],
+            error: null,
+            filters: {
+                tags: [],
+                period: {
+                    allTime: false,
+                    from: moment().subtract(28, 'days').format('YYYY-MM-DD'),
+                    to: moment().format('YYYY-MM-DD'),
+                },
+                clearFilters() {
+                    this.tags.splice(0, this.tags.length),
+                    this.period.allTime = false
+                    this.period.from = moment().subtract(28, 'days').format('YYYY-MM-DD'),
+                    this.period.to = moment().format('YYYY-MM-DD')
+                }
+            },
+            async getJobsPerTag() {
+                try {
+                    const res = await axios('api/reports/jobs_per_tag.php', {
+                        params: {
+                            ...(this.filters.tags.length && {tags: this.filters.tags.join()}),
+                            ...(
+                                this.filters.period.allTime 
+                                ? {'all-time': true} 
+                                : {from: this.filters.period.from, to: this.filters.period.to}
+                            ),
+                        }
+                    })
+                    if(!res.data.report) {
+                        throw new Error('Uncaught error getting jobs per tag day report')
+                    }
+                    if(!res.data.report?.length) {
+                        throw {
+                            status: 204,
+                            message: "There is currently no data for the given filters"
+                        }
+                    }
+                    this.data = res.data.report
+                } catch (error) {
+                    this.data = []
+                    if(error?.status) {
+                        this.error = error
+                        throw error
+                    }
+                    this.error = {
+                        status: 500,
+                        message: error
+                    }
+                    throw this.error
+                } finally {
+                    this.isLoaded = true
+                }
+            }
+        },
+        jobsPerClient: {
+            isLoaded: false,
+            data: [],
+            error: null,
+            filters: {
+                clients: [],
+                period: {
+                    allTime: false,
+                    from: moment().subtract(28, 'days').format('YYYY-MM-DD'),
+                    to: moment().format('YYYY-MM-DD'),
+                },
+                clearFilters() {
+                    this.clients.splice(0, this.clients.length)
+                    this.period.allTime = false
+                    this.period.from = moment().subtract(28, 'days').format('YYYY-MM-DD'),
+                    this.period.to = moment().format('YYYY-MM-DD')
+                }
+            },
+            async getJobsPerClient() {
+                try {
+                    const res = await axios('api/reports/jobs_per_client.php', {
+                        params: {
+                            ...(this.filters.clients.length && {
+                                clients: this.filters.clients.join()
+                            }),
+                            ...(
+                                this.filters.period.allTime 
+                                ? {'all-time': true} 
+                                : {from: this.filters.period.from, to: this.filters.period.to}
+                            ),
+                        }
+                    })
+                    if(!res.data.report) {
+                        throw new Error('Uncaught error getting jobs per client day report')
+                    }
+                    if(!res.data.report?.length) {
+                        throw {
+                            status: 204,
+                            message: "There is currently no data for the given filters"
+                        }
+                    }
+                    this.data = res.data.report
+                } catch (error) {
+                    this.data = []
+                    if (error?.status) {
+                        this.error = error
+                        throw error
+                    }
+                    this.error = {
+                        status: 500,
+                        message: error
+                    }
+                    throw this.error
+                } finally {
+                    this.isLoaded = true
+                }
+            }
+        },
     });
     Alpine.store('jobs').getJobs();
 
