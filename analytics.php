@@ -1,5 +1,5 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<div class="container">
+<div class="container analytics">
     <script src="assets/js/kingsoft/chart.js"></script>
     <div class="row">
         <div class="col-12">
