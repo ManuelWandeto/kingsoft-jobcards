@@ -43,7 +43,7 @@ function getJobsPerDay(PDO $conn, array $filters, Logger $logger) {
                 "
                 SELECT 
                     $timeUnit(created_at) as time_unit,
-                    AVG(TIMESTAMPDIFF(HOUR, start_date, end_date)) as avg_response_time
+                    AVG(TIMESTAMPDIFF(HOUR, reported_on, end_date)) as avg_response_time
                 FROM jc_jobcards 
                 $where $conjuntion status = 'COMPLETED'
                 GROUP BY time_unit;
@@ -103,7 +103,7 @@ function getJobsPerClient(PDO $conn, array $filters, Logger $logger) {
             SELECT  
                 jc.id as client_id, jc.`name` as client,
                 count(j.id) as jobs,
-                AVG(TIMESTAMPDIFF(HOUR,j.start_date,j.end_date)) as avg_response_time
+                AVG(TIMESTAMPDIFF(HOUR,j.reported_on,j.end_date)) as avg_response_time
             FROM jc_jobcards j
             INNER JOIN jc_clients jc ON jc.id = j.client_id
             $where
@@ -161,7 +161,7 @@ function getJobsPertag(PDO $conn, array $filters, Logger $logger) {
             SELECT 
                 t.id, t.`label` as tag, t.colorcode,
                 count(j.id) as jobs,
-                AVG(TIMESTAMPDIFF(HOUR, j.start_date, j.end_date)) as avg_response_time
+                AVG(TIMESTAMPDIFF(HOUR, j.reported_on, j.end_date)) as avg_response_time
             FROM jc_jobcards j
             RIGHT Join jc_jobcard_tags jt ON j.id = jt.jobcard_id
             INNER JOIN jc_tags t ON t.id = jt.tag_id
