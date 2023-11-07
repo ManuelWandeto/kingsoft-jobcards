@@ -137,9 +137,7 @@
             </div>
           </div>
           <div class="row py-2 px-3 align-items-center">
-            <div class="form-group col-sm-6 p-0 pr-2" 
-              :class="(fields.client.data?.contact_person || fields.client.data?.phone) && 'col-xl-3'"
-            >
+            <div class="form-group col-sm-6 p-0 pr-2 col-xl-4">
               <label for="reported_by">Reported by</label>
               <input 
                 name="reported_by"
@@ -151,9 +149,7 @@
                 placeholder="Enter name">
               <span class="text-danger" x-text="fields.reporter.error" x-cloak></span>
             </div>  
-            <div class="form-group col-sm-6 p-0 pr-xl-2" 
-              :class="(fields.client.data?.contact_person || fields.client.data?.phone) && 'col-xl-3'"
-            >
+            <div class="form-group col-sm-6 p-0 pr-xl-2 col-xl-4">
               <label for="reporter-contacts">Contacts</label>
               <input 
                 name="reporter_contacts"
@@ -165,27 +161,23 @@
                 placeholder="Enter reporter's phone">
               <span class="text-danger" x-text="fields.reporterContacts.error" x-cloak></span>
             </div>  
-            <template x-if="fields.client.data?.contact_person || fields.client.data?.phone">
-              <div 
-                class="form-group col-sm p-0" 
-                x-data="{client: fields.client.data}"
-                
-                x-show="client && (client.contact_person?.trim() || client.phone?.trim())"
-                x-cloak
-              >
-                <label>Client contact</label>
-                <div class="contact-person" id="client.id">
-                  <div class="contact-name">
-                    <i class="now-ui-icons users_single-02"></i>
-                    <span x-text="client.contact_person?.trim() || 'N/A'"></span>
-                  </div>
-                  <div class="contact-phone">
-                    <i class="now-ui-icons tech_mobile"></i>
-                    <span x-text="client.phone?.trim() || 'N/A'"></span>
-                  </div>
-                </div>
-              </div>  
-            </template>
+            <div class="form-group col-sm p-0 col-xl-4 position-relative">
+                <label for="report-date">
+                  <strong>* Reported On: </strong>
+                  <span x-text="fields.reportDate.value && moment(fields.reportDate.value).format('YYYY-MM-DD [at:] h:mm A')"></span>
+                </label>
+                <input 
+                  id="report-date"
+                  type="datetime-local" 
+                  name="reported_on" 
+                  class="form-control"
+                  x-model="fields.reportDate.value" 
+                  :disabled="editMode"
+                  required :class="fields.description.error ? 'border-danger' : ''"
+                  x-on:blur="validateField(fields.reportDate)"
+                >
+                <span class="text-danger" x-text="fields.reportDate.error" style="position: absolute; bottom: -20px;" x-cloak></span>
+              </div> 
           </div>
           <div class="row px-3 form-group">
             <label for="description">Description *</label>
@@ -256,7 +248,7 @@
                   x-model="fields.startDate.value" 
                   x-on:blur="validateField(fields.startDate)" 
                   :class="fields.startDate.error ? 'border-danger' : ''"
-                  :disabled="editMode"
+                  :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
                   id="startDate" required>
                 <input 
                   type="datetime-local"
