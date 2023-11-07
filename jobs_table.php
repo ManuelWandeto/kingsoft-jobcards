@@ -70,6 +70,9 @@
                         <th style="min-width: 150px;">
                             Reporter
                         </th>
+                        <th style="min-width: 100px;">
+                            Reported on
+                        </th>
                         <th style="min-width: 300px;">
                             Description
                         </th>
@@ -141,6 +144,12 @@
                                         </div>
                                     </template>
                                     <span x-show="!job.reported_by?.trim() && !job.reporter_contacts?.trim()">N/A</span>
+                                </td>
+                                <td>
+                                    <div class="datetime">
+                                        <span class="date" x-text="moment(job.reported_on).format('YYYY-MM-DD')"></span>
+                                        <span class="time" x-text="moment(job.reported_on).format('h:mm A')"></span>  
+                                    </div>
                                 </td>
                                 <td><pre x-text="job.description"></pre></td>
                                 <td x-text="job.priority" :class="job.priority.toLowerCase()"></td>
