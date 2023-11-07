@@ -20,6 +20,7 @@ function addJob(PDO $conn, array $jobData, Logger $logger) {
                         `priority`,  
                         `assigned_to`, 
                         `supervised_by`, 
+                        `reported_on`,
                         `reported_by`,
                         `reporter_contacts`,
                         `description`, 
@@ -30,7 +31,7 @@ function addJob(PDO $conn, array $jobData, Logger $logger) {
                         completion_notes, 
                         issues_arrising
                     ) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
         
         $stmt = $conn->prepare($sql);
         $stmt->execute([
@@ -39,6 +40,7 @@ function addJob(PDO $conn, array $jobData, Logger $logger) {
             $jobData['priority'], 
             isset($jobData['assigned_to']) ? $jobData['assigned_to'] : null, 
             isset($jobData['supervised_by']) ? $jobData['supervised_by'] : null, 
+            $jobData['reported_on'], 
             $jobData['reported_by'], 
             $jobData['reporter_contacts'], 
             $jobData['description'], 
@@ -82,6 +84,7 @@ function addJob(PDO $conn, array $jobData, Logger $logger) {
                 j.priority,
                 j.assigned_to,
                 j.supervised_by,
+                j.reported_on,
                 j.reported_by,
                 j.reporter_contacts,
                 j.description,
@@ -235,6 +238,7 @@ function getJobs(PDO $conn, array $filters, Logger $logger) {
         j.priority,
         j.assigned_to,
         j.supervised_by,
+        j.reported_on,
         j.reported_by,
         j.reporter_contacts,
         j.description,
@@ -345,6 +349,7 @@ function updateJob(PDO $conn, array $job, Logger $logger) {
                     `priority` = ?,  
                     `assigned_to` = ?, 
                     `supervised_by` = ?, 
+                    `reported_on` = ?,
                     `reported_by` = ?,
                     `reporter_contacts` = ?,
                     `description` = ?, 
@@ -362,6 +367,7 @@ function updateJob(PDO $conn, array $job, Logger $logger) {
             $job['priority'], 
             intval($job['assigned_to']) ? $job['assigned_to'] : null,
             intval($job['supervised_by']) ? $job['supervised_by'] : null,
+            $job['reported_on'],
             $job['reported_by'],
             $job['reporter_contacts'],
             $job['description'], 
@@ -449,6 +455,7 @@ function updateJob(PDO $conn, array $job, Logger $logger) {
                     j.priority,
                     j.assigned_to,
                     j.supervised_by,
+                    j.reported_on,
                     j.reported_by,
                     j.reporter_contacts,
                     j.description,
@@ -524,6 +531,7 @@ function finaliseJob(PDO $conn, array $job, Logger $logger) {
             j.priority,
             j.assigned_to,
             j.supervised_by,
+            j.reported_on,
             j.reported_by,
             j.reporter_contacts,
             j.description,
