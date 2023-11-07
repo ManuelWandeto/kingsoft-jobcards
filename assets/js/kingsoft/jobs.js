@@ -43,6 +43,10 @@ function formdata() {
                 value: undefined, error: null,
                 rules: []
             },
+            reportDate: {
+                value: moment().format(timestampFormatString), error: null,
+                rules: ["required"]
+            },
             startDate: {
                 value: moment().format(timestampFormatString), error: null,
                 rules: ["required"]
@@ -73,6 +77,7 @@ function formdata() {
             location, 
             reported_by,
             reporter_contacts,
+            reported_on,
             description, 
             priority, 
             status, 
@@ -92,6 +97,7 @@ function formdata() {
             this.fields.project.value = project
             this.fields.reporter.value = reported_by ?? null
             this.fields.reporterContacts.value = reporter_contacts ?? null
+            this.fields.reportDate.value = moment(reported_on).format(timestampFormatString)
             this.fields.description.value = description
             this.fields.priority.value = priority
             this.fields.status.value = status
@@ -132,6 +138,7 @@ function formdata() {
             this.fields.project.value = ""
             this.fields.reporter.value = ""
             this.fields.reporterContacts.value = ""
+            this.fields.reportDate.value = ""
             this.fields.description.value = ""
             this.fields.priority.value = undefined
             this.fields.status.value = undefined
@@ -160,6 +167,7 @@ function formdata() {
             formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
             formData.set('tags[]', this.fields.tags)
             formData.set('reported_by', this.fields.reporter.value ?? '')
+            formData.set('reported_on', moment(new Date(this.fields.reportDate.value)).format(timestampFormatString))
             formData.set('reporter_contact', this.fields.reporterContacts.value ?? '')
 
             const config = {
@@ -206,6 +214,7 @@ function formdata() {
             formData.set('location', this.fields.location.value)
             formData.set('status', this.fields.status.value)
             formData.set('client_id', this.fields.client.value)
+            formData.set('reported_on', moment(new Date(this.fields.reportDate.value)).format(timestampFormatString))
             formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
             formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
             formData.set('tags[]', this.fields.tags)
