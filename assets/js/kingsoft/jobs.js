@@ -48,12 +48,12 @@ function formdata() {
                 rules: ["required"]
             },
             startDate: {
-                value: moment().format(timestampFormatString), error: null,
-                rules: ["required"]
+                value: null, error: null,
+                rules: []
             },
             endDate: {
                 value: null, error: null,
-                rules: ["required", `laterOrEqual`]
+                rules: [`laterOrEqual`]
             },
             location: {
                 value: null, error: null,
@@ -103,8 +103,8 @@ function formdata() {
             this.fields.status.value = status
             this.fields.assignee.value = assigned_to || undefined
             this.fields.supervisor.value = supervised_by || undefined
-            this.fields.startDate.value = moment(start_date).format(timestampFormatString)
-            this.fields.endDate.value = moment(end_date).format(timestampFormatString)
+            this.fields.startDate.value = start_date?.trim() ? moment(start_date).format(timestampFormatString) : null
+            this.fields.endDate.value = end_date?.trim() ? moment(end_date).format(timestampFormatString) : null
             this.fields.completion_notes.value = completion_notes?.trim()
             this.fields.issues_arrising.value = issues_arrising?.trim()
             this.fields.files = job.files ?? []
@@ -138,13 +138,13 @@ function formdata() {
             this.fields.project.value = ""
             this.fields.reporter.value = ""
             this.fields.reporterContacts.value = ""
-            this.fields.reportDate.value = ""
+            this.fields.reportDate.value = moment().format(timestampFormatString)
             this.fields.description.value = ""
             this.fields.priority.value = undefined
             this.fields.status.value = undefined
             this.fields.assignee.value = undefined
             this.fields.supervisor.value = undefined
-            this.fields.startDate.value = moment().format(timestampFormatString)
+            this.fields.startDate.value = null
             this.fields.endDate.value = undefined
             this.fields.completion_notes.value = ""
             this.fields.issues_arrising.value = ""
@@ -163,12 +163,7 @@ function formdata() {
             Alpine.store('jobs').isLoaded = false
             const formData = new FormData(e.target)
             formData.set('client_id', this.fields.client.value)
-            formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
-            formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
-            formData.set('tags[]', this.fields.tags)
-            formData.set('reported_by', this.fields.reporter.value ?? '')
-            formData.set('reported_on', moment(new Date(this.fields.reportDate.value)).format(timestampFormatString))
-            formData.set('reporter_contact', this.fields.reporterContacts.value ?? '')
+            formData.set('tags', this.fields.tags.join())
 
             const config = {
                 withCredentials: true,
@@ -215,9 +210,9 @@ function formdata() {
             formData.set('status', this.fields.status.value)
             formData.set('client_id', this.fields.client.value)
             formData.set('reported_on', moment(new Date(this.fields.reportDate.value)).format(timestampFormatString))
-            formData.set('start_date', moment(new Date(this.fields.startDate.value)).format(timestampFormatString))
-            formData.set('end_date', moment(new Date(this.fields.endDate.value)).format(timestampFormatString))
-            formData.set('tags[]', this.fields.tags)
+            formData.set('start_date', this.fields.startDate.value ? moment(new Date(this.fields.startDate.value)).format(timestampFormatString) : '')
+            formData.set('end_date', this.fields.endDate.value ? moment(new Date(this.fields.endDate.value)).format(timestampFormatString) : '')
+            formData.set('tags', this.fields.tags.join())
 
 
             const config = {
@@ -290,6 +285,9 @@ function isStatusDisabled(optionValue, jobcardStatus) {
         SCHEDULED: 2,
         ONGOING: 3,
         OVERDUE: 4
+    }
+    if(!jobcardStatus) {
+        return false
     }
     return statusEnum[optionValue] < statusEnum[jobcardStatus]
 }
