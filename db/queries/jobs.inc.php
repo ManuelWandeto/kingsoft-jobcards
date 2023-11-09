@@ -46,8 +46,8 @@ function addJob(PDO $conn, array $jobData, Logger $logger) {
             $jobData['description'], 
             $jobData['location'], 
             $jobData['status'], 
-            $jobData['start_date'], 
-            $jobData['end_date'],
+            strlen($jobData['start_date']) ? $jobData['start_date'] : null, 
+            strlen($jobData['end_date']) ? $jobData['end_date'] : null,
             $jobData['completion_notes'],
             $jobData['issues_arrising'],
         ]);
@@ -62,7 +62,7 @@ function addJob(PDO $conn, array $jobData, Logger $logger) {
                 ]);
             }
         }
-        $tags = $jobData['tags'][0] ? array_map('intval', explode(',', $jobData['tags'][0])) : [];
+        $tags = strlen($jobData['tags']) ? array_map('intval', explode(',', $jobData['tags'])) : [];
     
         try {
             //code...
@@ -373,8 +373,8 @@ function updateJob(PDO $conn, array $job, Logger $logger) {
             $job['description'], 
             $job['location'], 
             $job['status'], 
-            $job['start_date'], 
-            $job['end_date'],
+            strlen($job['start_date']) ? $job['start_date'] : null, 
+            strlen($job['end_date']) ? $job['end_date'] : null,
             $job['completion_notes'],
             $job['issues_arrising'],
             $id
@@ -413,7 +413,7 @@ function updateJob(PDO $conn, array $job, Logger $logger) {
     
         $oldTags = $oldTagsRecord['tags'] ? array_map('intval', explode(',', $oldTagsRecord['tags'])) : [];
     
-        $newTags = $job['tags'][0] ? array_map('intval', explode(',', $job['tags'][0])) : [];
+        $newTags = strlen($job['tags']) ? array_map('intval', explode(',', $job['tags'])) : [];
         // Get old tags not included in the new and remove them
         $removedTags = array_values(array_diff($oldTags, $newTags));
     
