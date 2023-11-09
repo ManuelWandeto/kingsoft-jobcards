@@ -215,17 +215,37 @@
                 :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
               >
                 <option selected disabled value="">Select status</option>
-                <option value="REPORTED" :disabled="editMode && isStatusDisabled('REPORTED', job.status)">Reported</option>
-                <option value="SCHEDULED" :disabled="editMode && isStatusDisabled('SCHEDULED', job.status)">Scheduled</option>
+                <option value="REPORTED" :disabled="isStatusDisabled('REPORTED', job.status)">Reported</option>
+                <option value="SCHEDULED" 
+                  :disabled="
+                    isStatusDisabled('SCHEDULED', job.status) 
+                    || !(fields.startDate.value && fields.endDate.value)
+                    || moment(fields.startDate.value).isBefore(Date.now(), 'hour')
+                    "
+                  >Scheduled</option>
                 <option value="ONGOING" 
                   :disabled="
-                    editMode 
-                    && isStatusDisabled('ONGOING', job.status) 
-                    && (job.status === 'OVERDUE' && moment(fields.endDate.value).isBefore(Date.now(), 'hour'))
+                    !fields.assignee.value 
+                    || isStatusDisabled('ONGOING', job.status) 
+                    || !(fields.startDate.value && fields.endDate.value)
+                    || moment(fields.startDate.value).isAfter(Date.now(), 'hour')
+                    || moment(fields.endDate.value).isBefore(Date.now(), 'hour')
                   "
                 >Ongoing</option>
-                <option value="OVERDUE" :disabled="editMode && isStatusDisabled('OVERDUE', job.status)">Overdue</option>
-                <option value="COMPLETED" :disabled="editMode && !fields.assignee.value">Completed</option>
+                <option value="OVERDUE" 
+                  :disabled="
+                    isStatusDisabled('OVERDUE', job.status)
+                    || !(fields.startDate.value && fields.endDate.value)
+                    || moment(fields.endDate.value).isAfter(Date.now(), 'hour')
+                    "
+                  >Overdue</option>
+                <option value="COMPLETED" 
+                  :disabled="
+                    !fields.assignee.value
+                    || isStatusDisabled('OVERDUE', job.status)
+                    || !(fields.startDate.value && fields.endDate.value)
+                    "
+                  >Completed</option>
                 <option value="CANCELLED">Cancelled</option>
                 <option value="SUSPENDED">Suspended</option>
               </select>
@@ -249,7 +269,7 @@
                   x-on:blur="validateField(fields.startDate)" 
                   :class="fields.startDate.error ? 'border-danger' : ''"
                   :disabled="editMode && (job.status === 'COMPLETED' || job.status === 'CANCELLED')"
-                  id="startDate" required>
+                  id="startDate" >
                 <input 
                   type="datetime-local"
                   name="end_date"
@@ -257,7 +277,7 @@
                   x-model="fields.endDate.value" 
                   x-on:blur="validateField(fields.endDate)" 
                   :class="fields.endDate.error ? 'border-danger' : ''" 
-                  id="endDate" required>
+                  id="endDate" >
               </div>
               <span class="text-danger" x-text="fields.startDate.error" x-cloak></span>
               <span class="text-danger" x-text="fields.endDate.error" x-cloak></span>
