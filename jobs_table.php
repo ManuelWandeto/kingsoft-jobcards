@@ -158,12 +158,14 @@
                                 <td x-text="job.location"></td>
                                 <td>
                                     <div class="duration">
-                                        <div class="datetime">
+                                        <div class="datetime unset" x-show="!job.start_date">Not set</div>
+                                        <div class="datetime" x-show="job.start_date">
                                             <span class="date" x-text="moment(job.start_date).format('YYYY-MM-DD')"></span>
                                             <span class="time" x-text="moment(job.start_date).format('h:mm A')"></span>
                                         </div>
                                         -
-                                        <div class="datetime">
+                                        <div class="datetime unset" x-show="!job.end_date">Not set</div>
+                                        <div class="datetime" x-show="job.end_date">
                                             <span class="date" x-text="moment(job.end_date).format('YYYY-MM-DD')"></span>
                                             <span class="time" x-text="moment(job.end_date).format('h:mm A')"></span>
                                         </div>
