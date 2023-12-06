@@ -114,8 +114,8 @@ function formdata() {
             this.fields.status.value = status
             this.fields.assignee.value = assigned_to || undefined
             this.fields.supervisor.value = supervised_by || undefined
-            this.fields.startDate.value = moment(start_date).format(timestampFormatString)
-            this.fields.endDate.value = moment(end_date).format(timestampFormatString)
+            this.fields.startDate.value = start_date?.trim() ? moment(start_date).format(timestampFormatString) : null
+            this.fields.endDate.value = end_date?.trim() ? moment(end_date).format(timestampFormatString) : null
             this.fields.completion_notes.value = completion_notes?.trim()
             this.fields.issues_arrising.value = issues_arrising?.trim()
             this.fields.files = job.files ?? []
@@ -285,6 +285,9 @@ function isStatusDisabled(optionValue, jobcardStatus) {
         SCHEDULED: 2,
         ONGOING: 3,
         OVERDUE: 4
+    }
+    if(!jobcardStatus) {
+        return false
     }
     return statusEnum[optionValue] < statusEnum[jobcardStatus]
 }

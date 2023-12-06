@@ -44,7 +44,16 @@ function jobsPerDayChart(element) {
                     data: data?.response_times.map(t=>{
                         return {x: `${t.time_unit}`, y: t.avg_response_time}
                     })
+                },
+                data?.response_times && {
+                    type: 'line',
+                    label: 'Average duration (Hrs)',
+                    hidden: true,
+                    data: data?.response_times.map(t=>{
+                        return {x: `${t.time_unit}`, y: t.avg_duration}
+                    })
                 }
+
             ]
         }
     })
@@ -62,7 +71,12 @@ function jobsPerTagChart(element) {
                     callbacks: {
                         label: (context) => {
                             resTime = Alpine.store('reports').jobsPerTag.data[context.dataIndex]?.avg_response_time
-                            return [` ${context.label}: ${context.parsed}`, `Average response time: ${parseFloat(resTime)?.toFixed(2)} Hrs`]
+                            duration = Alpine.store('reports').jobsPerTag.data[context.dataIndex]?.avg_duration
+                            return [
+                                ` ${context.label}: ${context.parsed}`, 
+                                `Average response time: ${parseFloat(resTime)?.toFixed(2)} Hrs`,
+                                `Average duration: ${parseFloat(duration)?.toFixed(2)} Hrs`
+                            ]
                         }
                     }
                 }
@@ -93,7 +107,12 @@ function jobsPerClientChart(element) {
                     callbacks: {
                         label: (context) => {
                             resTime = Alpine.store('reports').jobsPerClient.data[context.dataIndex]?.avg_response_time
-                            return [` ${context.label}: ${context.parsed}`, `Average response time: ${parseFloat(resTime)?.toFixed(2)} Hrs`]
+                            duration = Alpine.store('reports').jobsPerClient.data[context.dataIndex]?.avg_duration
+                            return [
+                                ` ${context.label}: ${context.parsed}`, 
+                                `Average response time: ${parseFloat(resTime)?.toFixed(2)} Hrs`,
+                                `Average duration: ${parseFloat(duration)?.toFixed(2)} Hrs`
+                            ]
                         }
                     }
                 }

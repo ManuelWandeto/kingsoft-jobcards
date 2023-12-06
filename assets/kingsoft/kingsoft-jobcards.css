@@ -526,6 +526,12 @@ div.datetime span.time {
     opacity: 0.8;
 }
 
+div.datetime.unset {
+    opacity: .9;
+    font-family: 'Montserrat';
+
+}
+
 
 html {
     width: 100%;
