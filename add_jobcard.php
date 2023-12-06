@@ -16,13 +16,21 @@
       </div>
       <div class="card-body">
         <form method="POST" enctype="multipart/form-data" 
-        x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="editMode ? ()=>{
-          submitEdit(job.id, $event)
-          document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
-          editMode = false
-        } : ()=> {
-          submit($event)
-          document.getElementById('jobs-table').scrollIntoView({behavior: 'smooth', block: 'start'})
+        x-data="formdata()" @edit-job.window="editJob(job)" @submit.prevent="()=>{
+            Object.values(fields).forEach(field=>{
+                if(field.rules) {
+                  validateField(field)
+                }
+            })
+            if(!isFormInvalid) {
+              if(editMode) {
+                submitEdit(job.id, $event).then(()=>{
+                  editMode = false
+                })
+              } else {
+                submit($event)
+              }
+            }
         }">
         <template x-if="fields.tags.length">
           <div class="job-tags">
@@ -173,7 +181,7 @@
                   class="form-control"
                   x-model="fields.reportDate.value" 
                   :disabled="editMode"
-                  required :class="fields.description.error ? 'border-danger' : ''"
+                  required :class="fields.reportDate.error ? 'border-danger' : ''"
                   x-on:blur="validateField(fields.reportDate)"
                 >
                 <span class="text-danger" x-text="fields.reportDate.error" style="position: absolute; bottom: -20px;" x-cloak></span>
@@ -321,7 +329,7 @@
                                 </div>
                                 <div class="modal-footer">
                                   <button type="button" class="btn btn-secondary mr-3" data-dismiss="modal">Close</button>
-                                  <button type="button" class="btn btn-primary" data-dismiss="modal" @click = "() => {
+                                  <button type="button" class="btn btn-primary" data-dismiss="modal" @click="()=>{
                                     deleteUploadedFile(file.name, file.uploadedBy, job.id).then(ok => {
                                       const i = fields.files.findIndex(f => f.name === file.name)
   
