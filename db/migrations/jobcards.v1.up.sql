@@ -1,10 +1,7 @@
--- CREATE SCHEMA `kingsoft`;
-
 CREATE TABLE `jc_jobcards` (
   `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
   `project` varchar(255) NOT NULL,
   `client_id` MEDIUMINT NOT NULL,
-  -- mysql enum values are numbered from left to right starting with 1
   `priority` ENUM('LOW', 'MEDIUM', 'URGENT') NOT NULL,
   `reported_by` VARCHAR(255),
   `reporter_contacts` VARCHAR(255),
@@ -21,12 +18,11 @@ CREATE TABLE `jc_jobcards` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-DROP TABLE `jc_jobcards`;
 
 CREATE TABLE `jc_users` (
   `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
-  `username` varchar(255) NOT NULL,
-  `email` varchar(255),
+  `username` varchar(255) NOT NULL UNIQUE,
+  `email` varchar(255) UNIQUE,
   `phone` varchar(255),
   `password` varchar(255) NOT NULL,
   `role` ENUM('USER', 'EDITOR', 'ADMIN') NOT NULL,
@@ -38,11 +34,12 @@ CREATE TABLE `jc_users` (
 
 CREATE TABLE `jc_clients` (
   `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255),
+  `name` VARCHAR(255) NOT NULL UNIQUE,
+  `email` VARCHAR(255),
   `contact_person` VARCHAR(255),
-  `phone` varchar(255),
-  `location` varchar(255) NOT NULL,
+  `phone` VARCHAR(255),
+  `location` VARCHAR(255) NOT NULL,
+  `logo` VARCHAR(255) UNIQUE,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -53,11 +50,6 @@ ALTER TABLE `jc_jobcards` ADD FOREIGN KEY (`assigned_to`) REFERENCES `jc_users`(
 
 ALTER TABLE `jc_jobcards` ADD FOREIGN KEY (`supervised_by`) REFERENCES `jc_users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE `jc_users` ADD CONSTRAINT unique_username_idx UNIQUE (username);
-
-ALTER TABLE `jc_users` ADD CONSTRAINT unique_email_idx UNIQUE (email);
-
-ALTER TABLE `jc_clients` ADD UNIQUE (`name`);
 
 DELIMITER $$
 CREATE TRIGGER jobcard_status_on_update 
@@ -98,13 +90,11 @@ CREATE TABLE `jc_attachments` (
 	`jobcard_id` MEDIUMINT NOT NULL,
 	`file_name` VARCHAR(255) NOT NULL,
   `uploaded_by` MEDIUMINT NOT NULL,
-	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `uc_jobcard_id_file_name_uploaded_by` UNIQUE (`jobcard_id`, `file_name`, `uploaded_by`)
 );
 
-ALTER TABLE jc_attachments ADD COLUMN `uploaded_by` MEDIUMINT NOT NULL;
 ALTER TABLE jc_attachments ADD FOREIGN KEY (`uploaded_by`) REFERENCES jc_users(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE jc_attachments ADD CONSTRAINT `uc_jobcard_id_file_name_uploaded_by` UNIQUE (`jobcard_id`, `file_name`, `uploaded_by`);
-ALTER TABLE jc_attachments CHANGE COLUMN `file_path` `file_name` VARCHAR(255) NOT NULL;
 
 CREATE TABLE jc_tags (
 	`id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
@@ -120,7 +110,7 @@ CREATE TABLE jc_jobcard_tags (
 	`tag_id` MEDIUMINT NOT NULL,
 	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT uc_jobcard_id_tag_id UNIQUE (jobcard_id, tag_id)
+	CONSTRAINT `uc_jobcard_id_tag_id` UNIQUE (`jobcard_id`, `tag_id`)
 );
 
 ALTER TABLE `jc_jobcard_tags` ADD FOREIGN KEY (`jobcard_id`) REFERENCES `jc_jobcards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -144,14 +134,14 @@ END$$
 
 DELIMITER ;
 
-CREATE TABLE `jc_logs` (
-  `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
-  `severity` ENUM('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL') NOT NULL,
-  `action_type` VARCHAR(255) NOT NULL,
-  `user_id` MEDIUMINT,
-  `description` TEXT NOT NULL,
-  `stack_trace` TEXT,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE `jc_logs` (
+--   `id` MEDIUMINT PRIMARY KEY AUTO_INCREMENT,
+--   `severity` ENUM('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL') NOT NULL,
+--   `action_type` VARCHAR(255) NOT NULL,
+--   `user_id` MEDIUMINT,
+--   `description` TEXT NOT NULL,
+--   `stack_trace` TEXT,
+--   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- );
 
-ALTER TABLE `jc_logs` ADD FOREIGN KEY (`user_id`) REFERENCES `jc_users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+-- ALTER TABLE `jc_logs` ADD FOREIGN KEY (`user_id`) REFERENCES `jc_users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
