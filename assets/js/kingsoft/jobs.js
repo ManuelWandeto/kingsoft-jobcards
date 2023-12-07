@@ -126,18 +126,23 @@ function formdata() {
         },
         isFormInvalid: true,
         validateField(field) {
-            if(field.rules.find(rule => rule.includes('laterOrEqual'))) {
+            const laterOrEqualIndex = field.rules.findIndex(rule => rule.includes('laterOrEqual'))
+            const beforOrEqualIndex = field.rules.findIndex(rule => rule.includes('beforeOrEqual'))
+            
+            if(laterOrEqualIndex >= 0) {
+                field.rules.splice(laterOrEqualIndex, 1)
+
                 if (this.fields.startDate.value) {
-                    field.rules.pop()
                     field.rules.push(`laterOrEqual:${this.fields.startDate.value}`)
                 } else {
                     field.rules.push(`laterOrEqual`)
                 }
                 
             }
-            if(field.rules.find(rule => rule.includes('beforeOrEqual'))) {
+            if(beforOrEqualIndex >= 0) {
+                field.rules.splice(beforOrEqualIndex, 1)
+
                 if (this.fields.startDate.value) {
-                    field.rules.pop()
                     field.rules.push(`beforeOrEqual:${this.fields.startDate.value}`)  
                 } else {
                     field.rules.push(`beforeOrEqual`)
