@@ -217,8 +217,6 @@ function formdata() {
                 // set fields that may be disabled on edit
                 formData.set('project', this.fields.project.value)
                 formData.set('priority', this.fields.priority.value)
-                formData.set('reported_by', this.fields.reporter.value ?? '')
-                formData.set('reporter_contact', this.fields.reporterContacts.value ?? '')
                 formData.set('description', this.fields.description.value)
                 formData.set('assigned_to', this.fields.assignee.value ?? '')
                 formData.set('supervised_by', this.fields.supervisor.value ?? '')
