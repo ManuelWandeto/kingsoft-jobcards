@@ -7,13 +7,13 @@ const config = {
     }
 };
 function formdata() {
-    Iodine.rule('laterOrEqual', (endDate, startDate) => {
-        return startDate ? new Date(endDate) >= new Date(startDate) : true;
+    Iodine.rule('later', (endDate, startDate) => {
+        return startDate ? new Date(endDate) > new Date(startDate) : true;
     });
     Iodine.rule('beforeOrEqual', (reportedOn, startDate) => {
         return startDate ? new Date(reportedOn) <= new Date(startDate) : true;
     });
-    Iodine.setErrorMessage('laterOrEqual', "End date must be after or equal to '[PARAM]'");
+    Iodine.setErrorMessage('later', "End date must be after '[PARAM]'");
     Iodine.setErrorMessage('beforeOrEqual', "Date must be before or equal to start date");
     
     return {
@@ -64,7 +64,7 @@ function formdata() {
             },
             endDate: {
                 value: null, error: null,
-                rules: ["optional", "laterOrEqual"]
+                rules: ["optional", "later"]
             },
             location: {
                 value: null, error: null,
@@ -126,16 +126,16 @@ function formdata() {
         },
         isFormInvalid: true,
         validateField(field) {
-            const laterOrEqualIndex = field.rules.findIndex(rule => rule.includes('laterOrEqual'))
+            const laterIndex = field.rules.findIndex(rule => rule.includes('later'))
             const beforOrEqualIndex = field.rules.findIndex(rule => rule.includes('beforeOrEqual'))
             
-            if(laterOrEqualIndex >= 0) {
-                field.rules.splice(laterOrEqualIndex, 1)
+            if(laterIndex >= 0) {
+                field.rules.splice(laterIndex, 1)
 
                 if (this.fields.startDate.value) {
-                    field.rules.push(`laterOrEqual:${this.fields.startDate.value}`)
+                    field.rules.push(`later:${this.fields.startDate.value}`)
                 } else {
-                    field.rules.push(`laterOrEqual`)
+                    field.rules.push(`later`)
                 }
                 
             }
